@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 
 # --- 1. CONSTANTES TRIBUTARIAS AG 2025 ---
@@ -204,13 +203,3 @@ if saldo_total > 0:
     col_res3.metric(label="🔴 SALDO A PAGAR", value=f"${saldo_total:,.0f}")
 else:
     col_res3.metric(label="🟢 SALDO A FAVOR", value=f"${abs(saldo_total):,.0f}")
-
-st.caption("Nota Legal: Este liquidador es una herramienta de referencia basada en la normativa vigente (incluyendo modificaciones Ley 2277/2022). Se recomienda validación profesional final.")
-
-### ¿Qué logramos con estos cambios?
-
-1. **Evitar errores de "dedo" graves:** Usamos el parámetro `max_value` de Streamlit. Si el usuario intenta ingresar que pagó $70.000.000 en intereses de vivienda (cuyo tope es ~$59 millones), la casilla se bloqueará y lo forzará al tope máximo legal.
-2. **Definiciones legales (Tooltips):** Notarás el parámetro `help="..."` en cada campo de captura. Esto genera un icono de un pequeño signo de interrogación `(?)` en la interfaz. Al pasar el mouse, el usuario podrá leer los requisitos de esa deducción.
-3. **El Beneficio "Oculto" (Factura electrónica):** Separe la casilla del 1% por compras con factura electrónica porque es vital matemáticamente. La ley 2277 indica explícitamente que este beneficio no entra a sumar en el famoso cuello de botella del 40%, lo que permite disminuir el impuesto un poco más allá de los topes regulares.
-
-Teniendo esto listo, tu paso a paso para publicarlo en GitHub sigue siendo idéntico. Reemplazas el código viejo en tu archivo local `app.py`, lo subes a GitHub con un "Commit" y la página web de Streamlit se actualizará sola en un par de minutos.
