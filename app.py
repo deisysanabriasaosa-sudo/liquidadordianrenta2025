@@ -52,15 +52,47 @@ with col_c:
         ]
     )
 
-# --- 3. INGRESOS CÉDULA GENERAL ---
+# --- 3. INGRESOS CÉDULA GENERAL (Depuración por naturaleza) ---
 st.header("2. Ingresos Cédula General (Trabajo, Capital, No Laboral)")
-col_ing1, col_ing2 = st.columns(2)
-with col_ing1:
-    ingresos_brutos = st.number_input("Ingresos Brutos Totales", min_value=0.0, step=1000000.0)
-with col_ing2:
-    incrngo = st.number_input("Ingresos No Constitutivos de Renta (Salud, Pensión, FSP obligatorios)", min_value=0.0, step=100000.0, help="Aportes obligatorios que la ley permite restar de entrada para hallar el ingreso neto.")
+st.caption("Diligencia cada pestaña según la naturaleza de tus ingresos, tal como aparece en el Formulario 210.")
+
+tab_trabajo, tab_capital, tab_nolaboral = st.tabs(["💼 Rentas de Trabajo", "🏢 Rentas de Capital", "🏪 Rentas No Laborales"])
+
+with tab_trabajo:
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        ing_trabajo = st.number_input("Ingresos Brutos (Salarios, honorarios, comisiones)", min_value=0.0, step=1000000.0)
+    with col_t2:
+        incrngo_trabajo = st.number_input("INCRNGO Trabajo (Salud, Pensión, FSP)", min_value=0.0, step=100000.0, key="inc_t")
+
+with tab_capital:
+    col_c1, col_c2, col_c3 = st.columns(3)
+    with col_c1:
+        ing_capital = st.number_input("Ingresos Brutos (Intereses, rendimientos, arriendos)", min_value=0.0, step=1000000.0)
+    with col_c2:
+        incrngo_capital = st.number_input("INCRNGO Capital", min_value=0.0, step=100000.0, key="inc_c")
+    with col_c3:
+        costos_capital = st.number_input("Costos y Gastos procedentes (Capital)", min_value=0.0, step=100000.0, key="cost_c")
+
+with tab_nolaboral:
+    col_nl1, col_nl2, col_nl3 = st.columns(3)
+    with col_nl1:
+        ing_nolaboral = st.number_input("Ingresos Brutos (Comercio, otros no clasificados)", min_value=0.0, step=1000000.0)
+    with col_nl2:
+        incrngo_nolaboral = st.number_input("INCRNGO No Laboral", min_value=0.0, step=100000.0, key="inc_nl")
+    with col_nl3:
+        costos_nolaboral = st.number_input("Costos y Gastos procedentes (No Laboral)", min_value=0.0, step=100000.0, key="cost_nl")
+
+# Consolidación Cédula General
+ingresos_brutos = ing_trabajo + ing_capital + ing_nolaboral
+incrngo = incrngo_trabajo + incrngo_capital + incrngo_nolaboral
+costos_procedentes = costos_capital + costos_nolaboral
 
 ingreso_neto = max(0, ingresos_brutos - incrngo)
+ingreso_neto_trabajo = max(0, ing_trabajo - incrngo_trabajo)
+renta_liquida_antes_beneficios = max(0, ingreso_neto - costos_procedentes)
+
+st.write(f"**Resumen Consolidado:** Ingresos Brutos Totales: ${ingresos_brutos:,.0f} | Ingreso Neto: ${ingreso_neto:,.0f}")
 
 # --- 4. DEDUCCIONES IMPUTABLES (Con límites en COP) ---
 st.header("3. Deducciones Imputables")
@@ -108,7 +140,7 @@ with col_re1:
         min_value=0.0, max_value=float(TOPE_AFC_PENSIONES), step=100000.0,
         help="Aportes a cuentas AFC o fondos voluntarios. Limitado al 30% del ingreso laboral o tributario del año, sin exceder 3.800 UVT."
     )
-    # Ajuste automático del tope del 30% para AFC/Voluntarias según la ley
+    # Ajuste automático del tope del 30%
     limite_30_ingreso = ingresos_brutos * 0.30
     re_afc_pensiones_aplicable = min(re_afc_pensiones, limite_30_ingreso)
 
@@ -123,11 +155,12 @@ with col_re2:
 st.header("5. Liquidación Cédula General")
 
 # Motor de cálculo: Renta Exenta Laboral (25%)
-renta_exenta_laboral_base = max(0, ingreso_neto - total_deducciones_limitadas - re_afc_pensiones_aplicable - re_cesantias)
+# ¡Mejora! Ahora solo se calcula sobre la base del ingreso de trabajo (Formulario 210)
+renta_exenta_laboral_base = max(0, ingreso_neto_trabajo - total_deducciones_limitadas - re_afc_pensiones_aplicable - re_cesantias)
 renta_exenta_25 = max(0, renta_exenta_laboral_base * 0.25)
 renta_exenta_25_aplicable = min(renta_exenta_25, TOPE_25_EXENTO)
 
-# Aplicación del Límite Global (40% o 1.340 UVT)
+# Aplicación del Límite Global (40% o 1.340 UVT) sobre el Ingreso Neto total
 total_beneficios_sometidos = total_deducciones_limitadas + re_afc_pensiones_aplicable + re_cesantias + renta_exenta_25_aplicable
 limite_40 = ingreso_neto * 0.40
 limite_final_aplicable = min(limite_40, TOPE_GLOBAL_1340)
@@ -142,7 +175,7 @@ ded_factura_elec = st.number_input(
     help="El 1% del valor de tus compras sustentadas con factura electrónica de venta, sin exceder 240 UVT. No se somete al límite del 40%."
 )
 
-renta_liquida_cedula_general = max(0, ingreso_neto - beneficios_permitidos - ded_factura_elec)
+renta_liquida_cedula_general = max(0, renta_liquida_antes_beneficios - beneficios_permitidos - ded_factura_elec)
 
 # --- PANEL DE RESUMEN ---
 st.info(f"**Renta Líquida Gravable Cédula General:** ${renta_liquida_cedula_general:,.0f}")
@@ -189,7 +222,7 @@ with col_liq1:
         help="Se restan directamente del impuesto. Despliega el panel de abajo para ver la normatividad."
     )
     
-    # NUEVO: Panel explicativo de Descuentos Tributarios
+    # Panel explicativo de Descuentos Tributarios
     with st.expander("📚 Ver conceptos legales de Descuentos Tributarios (Art. 253 al 257 ET)"):
         st.markdown("""
         **Conceptos válidos según el Estatuto Tributario:**
