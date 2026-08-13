@@ -206,7 +206,6 @@ else:
     col_res3.metric(label="🟢 SALDO A FAVOR", value=f"${abs(saldo_total):,.0f}")
 
 st.caption("Nota Legal: Este liquidador es una herramienta de referencia basada en la normativa vigente (incluyendo modificaciones Ley 2277/2022). Se recomienda validación profesional final.")
-```eof
 
 ### ¿Qué logramos con estos cambios?
 
