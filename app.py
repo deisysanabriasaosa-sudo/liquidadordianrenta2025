@@ -178,9 +178,32 @@ base_uvt = renta_liquida_definitiva / UVT_2025
 impuesto_uvt = calcular_impuesto_241(base_uvt)
 impuesto_pesos = impuesto_uvt * UVT_2025
 
+# Cálculo en tiempo real del límite legal del 25% para Descuentos (Art. 258 ET)
+limite_legal_descuentos = impuesto_pesos * 0.25
+
 col_liq1, col_liq2 = st.columns(2)
 with col_liq1:
-    descuentos_tributarios = st.number_input("Descuentos Tributarios (Donaciones, etc.)", min_value=0.0, step=100000.0)
+    descuentos_tributarios = st.number_input(
+        "Descuentos Tributarios (Donaciones, I+D+i, etc.)", 
+        min_value=0.0, step=100000.0,
+        help="Se restan directamente del impuesto. Despliega el panel de abajo para ver la normatividad."
+    )
+    
+    # NUEVO: Panel explicativo de Descuentos Tributarios
+    with st.expander("📚 Ver conceptos legales de Descuentos Tributarios (Art. 253 al 257 ET)"):
+        st.markdown("""
+        **Conceptos válidos según el Estatuto Tributario:**
+        1. **Donaciones a ESAL (Art. 257):** 25% del valor donado a entidades del Régimen Tributario Especial o públicas.
+        2. **Impuestos pagados en el exterior (Art. 254):** Para residentes que tributaron fuera de Colombia.
+        3. **Inversiones I+D+i (Art. 256):** 25% invertido en proyectos avalados en ciencia y tecnología.
+        4. **Inversiones en medio ambiente (Art. 253):** 25% de la inversión directa avalada por ANLA/CAR.
+        5. **Otros (25%):** Red de Bibliotecas, Parques Naturales, Becas ICETEX, Innpulsa.
+        
+        ⚠️ **Regla General del Límite (Art. 258 ET):** 
+        Los descuentos tributarios no pueden exceder el **25% del impuesto básico de renta**.
+        """)
+        st.info(f"💡 Para este caso específico, el límite legal máximo a descontar sugerido es: **${limite_legal_descuentos:,.0f}**")
+
     retenciones = st.number_input("Retenciones en la fuente practicadas en 2025", min_value=0.0, step=100000.0)
     impuesto_neto_anterior = st.number_input("Impuesto neto de renta del año anterior (2024)", min_value=0.0, step=100000.0, help="Obligatorio para calcular el anticipo por el Procedimiento 2 (Promedio).")
 with col_liq2:
@@ -189,13 +212,13 @@ with col_liq2:
 
 impuesto_neto = max(0, impuesto_pesos - descuentos_tributarios)
 
-# --- NUEVO MOTOR DE CÁLCULO DE ANTICIPO (Art 807 ET) ---
+# --- MOTOR DE CÁLCULO DE ANTICIPO (Art 807 ET) ---
 porcentaje_anticipo = 0.25 if "1" in anos_declarando else (0.50 if "2" in anos_declarando else 0.75)
 
 # Procedimiento 1: Impuesto del año actual
 anticipo_metodo_1 = max(0, (impuesto_neto * porcentaje_anticipo) - retenciones)
 
-# Procedimiento 2: Promedio de los dos últimos años (solo aplica si hay más de 1 año declarando)
+# Procedimiento 2: Promedio de los dos últimos años
 promedio_impuestos = (impuesto_neto + impuesto_neto_anterior) / 2
 anticipo_metodo_2 = max(0, (promedio_impuestos * porcentaje_anticipo) - retenciones)
 
