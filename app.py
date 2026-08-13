@@ -182,19 +182,38 @@ col_liq1, col_liq2 = st.columns(2)
 with col_liq1:
     descuentos_tributarios = st.number_input("Descuentos Tributarios (Donaciones, etc.)", min_value=0.0, step=100000.0)
     retenciones = st.number_input("Retenciones en la fuente practicadas en 2025", min_value=0.0, step=100000.0)
+    impuesto_neto_anterior = st.number_input("Impuesto neto de renta del año anterior (2024)", min_value=0.0, step=100000.0, help="Obligatorio para calcular el anticipo por el Procedimiento 2 (Promedio).")
 with col_liq2:
-    anos_declarando = st.selectbox("Años declarando renta (Para cálculo del anticipo)", ["Primer año (25%)", "Segundo año (50%)", "Tercer año o más (75%)"])
+    anos_declarando = st.selectbox("Número de veces que ha presentado declaración de renta", ["1 vez (25%)", "2 veces (50%)", "3 veces o más (75%)"])
     saldo_favor_anterior = st.number_input("Saldo a favor del año anterior (2024)", min_value=0.0, step=100000.0)
 
 impuesto_neto = max(0, impuesto_pesos - descuentos_tributarios)
 
-porcentaje_anticipo = 0.25 if "Primer" in anos_declarando else (0.50 if "Segundo" in anos_declarando else 0.75)
-anticipo_calculado = (impuesto_neto * porcentaje_anticipo) - retenciones
-anticipo_final = max(0, anticipo_calculado)
+# --- NUEVO MOTOR DE CÁLCULO DE ANTICIPO (Art 807 ET) ---
+porcentaje_anticipo = 0.25 if "1" in anos_declarando else (0.50 if "2" in anos_declarando else 0.75)
+
+# Procedimiento 1: Impuesto del año actual
+anticipo_metodo_1 = max(0, (impuesto_neto * porcentaje_anticipo) - retenciones)
+
+# Procedimiento 2: Promedio de los dos últimos años (solo aplica si hay más de 1 año declarando)
+promedio_impuestos = (impuesto_neto + impuesto_neto_anterior) / 2
+anticipo_metodo_2 = max(0, (promedio_impuestos * porcentaje_anticipo) - retenciones)
+
+# El sistema elige el menor impuesto
+anticipo_final = min(anticipo_metodo_1, anticipo_metodo_2)
 
 saldo_total = (impuesto_neto + anticipo_final) - retenciones - saldo_favor_anterior
 
 st.markdown("---")
+
+# Mostrar análisis de la elección del anticipo al usuario
+with st.expander("Ver análisis detallado del Anticipo de Renta (Art 807 ET)"):
+    st.write(f"Según la ley, puedes elegir el procedimiento que arroje el menor valor a pagar:")
+    st.write(f"- **Porcentaje aplicado:** {porcentaje_anticipo * 100}%")
+    st.write(f"- **Procedimiento 1 (Basado en impuesto actual):** ${anticipo_metodo_1:,.0f}")
+    st.write(f"- **Procedimiento 2 (Basado en promedio con año anterior):** ${anticipo_metodo_2:,.0f}")
+    st.success(f"**El sistema seleccionó automáticamente el menor valor: ${anticipo_final:,.0f}**")
+
 col_res1, col_res2, col_res3 = st.columns(3)
 col_res1.metric(label="IMPUESTO NETO A CARGO", value=f"${impuesto_neto:,.0f}")
 col_res2.metric(label="ANTICIPO AÑO SIGUIENTE", value=f"${anticipo_final:,.0f}")
@@ -203,3 +222,5 @@ if saldo_total > 0:
     col_res3.metric(label="🔴 SALDO A PAGAR", value=f"${saldo_total:,.0f}")
 else:
     col_res3.metric(label="🟢 SALDO A FAVOR", value=f"${abs(saldo_total):,.0f}")
+
+st.caption("Nota Legal: Este liquidador es una herramienta de referencia basada en la normativa vigente (incluyendo modificaciones Ley 2277/2022). Se recomienda validación profesional final.")
