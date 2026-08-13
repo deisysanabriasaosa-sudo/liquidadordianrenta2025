@@ -52,8 +52,75 @@ with col_c:
         ]
     )
 
-# --- 3. INGRESOS CÉDULA GENERAL (Depuración por naturaleza) ---
-st.header("2. Ingresos Cédula General (Trabajo, Capital, No Laboral)")
+# --- NUEVO: 3. LIQUIDACIÓN DE PATRIMONIO (Tabla Interactiva) ---
+st.header("2. Liquidación de Patrimonio (Bienes y Deudas)")
+st.caption("Relaciona tus activos y pasivos a 31 de diciembre de 2025. El sistema calculará tu Patrimonio Líquido y lo enviará al módulo de comparación patrimonial.")
+
+# Encabezados de la tabla
+col_p1, col_p2, col_p3 = st.columns([2, 1.5, 3])
+col_p1.markdown("**Naturaleza del Bien**")
+col_p2.markdown("**Valor Fiscal a 31 Dic (COP)**")
+col_p3.markdown("**Regla de Valoración (Estatuto Tributario)**")
+st.markdown("---")
+
+# Fila 1: Efectivo
+c1, c2, c3 = st.columns([2, 1.5, 3])
+c1.write("Efectivo y saldos en cuentas bancarias")
+val_efectivo = c2.number_input("Efectivo", min_value=0.0, step=1000000.0, label_visibility="collapsed")
+c3.caption("Art. 268 ET: Valor exacto del saldo a 31 de diciembre.")
+
+# Fila 2: Inversiones
+c1, c2, c3 = st.columns([2, 1.5, 3])
+c1.write("Inversiones, acciones y aportes")
+val_inversiones = c2.number_input("Inversiones", min_value=0.0, step=1000000.0, label_visibility="collapsed")
+c3.caption("Art. 272 ET: Costo fiscal (valor de adquisición de la acción/aporte).")
+
+# Fila 3: Cuentas por cobrar
+c1, c2, c3 = st.columns([2, 1.5, 3])
+c1.write("Cuentas por cobrar (Préstamos a terceros)")
+val_cxc = c2.number_input("CxC", min_value=0.0, step=1000000.0, label_visibility="collapsed")
+c3.caption("Art. 270 ET: Valor nominal del crédito o deuda a tu favor.")
+
+# Fila 4: Inmuebles
+c1, c2, c3 = st.columns([2, 1.5, 3])
+c1.write("Bienes Inmuebles (Casas, apartamentos, fincas)")
+val_inmuebles = c2.number_input("Inmuebles", min_value=0.0, step=1000000.0, label_visibility="collapsed")
+c3.caption("Art. 277 ET: El mayor valor entre el costo de adquisición, avalúo catastral o autoavalúo.")
+
+# Fila 5: Vehículos
+c1, c2, c3 = st.columns([2, 1.5, 3])
+c1.write("Vehículos y maquinaria")
+val_vehiculos = c2.number_input("Vehículos", min_value=0.0, step=1000000.0, label_visibility="collapsed")
+c3.caption("Art. 276 ET: Costo de adquisición o avalúo comercial fijado por el MinTransporte.")
+
+# Fila 6: Activos Biológicos
+c1, c2, c3 = st.columns([2, 1.5, 3])
+c1.write("Activos biológicos (Semovientes, ganado, cultivos)")
+val_biologicos = c2.number_input("Biologicos", min_value=0.0, step=1000000.0, label_visibility="collapsed")
+c3.caption("Art. 276-2 ET: Costo fiscal o valor comercial según aplique contablemente para no obligados a llevar contabilidad.")
+
+# Fila 7: Otros Activos
+c1, c2, c3 = st.columns([2, 1.5, 3])
+c1.write("Otros activos (Joyas, muebles, enseres)")
+val_otros_activos = c2.number_input("Otros", min_value=0.0, step=1000000.0, label_visibility="collapsed")
+c3.caption("Art. 277 y ss ET: Costo de adquisición o costo fiscal.")
+
+st.markdown("---")
+
+# Fila 8: Pasivos (Resta)
+c1, c2, c3 = st.columns([2, 1.5, 3])
+c1.markdown("**Menos: Pasivos (Deudas con bancos o terceros)**")
+val_pasivos = c2.number_input("Pasivos", min_value=0.0, step=1000000.0, label_visibility="collapsed")
+c3.caption("Art. 283 ET: Deudas reales y consolidadas, respaldadas con documentos idóneos (pagarés, extractos).")
+
+# Cálculos Totales Patrimonio
+patrimonio_bruto_calc = val_efectivo + val_inversiones + val_cxc + val_inmuebles + val_vehiculos + val_biologicos + val_otros_activos
+patrimonio_liquido_calc = max(0, patrimonio_bruto_calc - val_pasivos)
+
+st.success(f"**Total Patrimonio Bruto:** ${patrimonio_bruto_calc:,.0f} | **Total Patrimonio Líquido Calculado:** ${patrimonio_liquido_calc:,.0f}")
+
+# --- 4. INGRESOS CÉDULA GENERAL (Depuración por naturaleza) ---
+st.header("3. Ingresos Cédula General (Trabajo, Capital, No Laboral)")
 st.caption("Diligencia cada pestaña según la naturaleza de tus ingresos, tal como aparece en el Formulario 210.")
 
 tab_trabajo, tab_capital, tab_nolaboral = st.tabs(["💼 Rentas de Trabajo", "🏢 Rentas de Capital", "🏪 Rentas No Laborales"])
@@ -94,8 +161,8 @@ renta_liquida_antes_beneficios = max(0, ingreso_neto - costos_procedentes)
 
 st.write(f"**Resumen Consolidado:** Ingresos Brutos Totales: ${ingresos_brutos:,.0f} | Ingreso Neto: ${ingreso_neto:,.0f}")
 
-# --- 4. DEDUCCIONES IMPUTABLES (Con límites en COP) ---
-st.header("3. Deducciones Imputables")
+# --- 5. DEDUCCIONES IMPUTABLES (Con límites en COP) ---
+st.header("4. Deducciones Imputables")
 st.caption("Nota: El sistema no te permitirá ingresar un valor superior al tope legal anual aplicable para 2025.")
 col_d1, col_d2 = st.columns(2)
 
@@ -130,8 +197,8 @@ with col_d2:
 
 total_deducciones_limitadas = ded_vivienda + ded_medicina + ded_dep_tradicional + ded_dep_adicional + ded_gmf
 
-# --- 5. RENTAS EXENTAS (Con límites en COP) ---
-st.header("4. Rentas Exentas")
+# --- 6. RENTAS EXENTAS (Con límites en COP) ---
+st.header("5. Rentas Exentas")
 col_re1, col_re2 = st.columns(2)
 
 with col_re1:
@@ -151,16 +218,15 @@ with col_re2:
         help="El valor del ingreso reconocido por cesantías e intereses a las cesantías, que entra como ingreso bruto pero se resta como exento según los límites del Art 206."
     )
 
-# --- 6. CÁLCULO DE LÍMITES Y RENTA EXENTA LABORAL ---
-st.header("5. Liquidación Cédula General")
+# --- 7. CÁLCULO DE LÍMITES Y RENTA EXENTA LABORAL ---
+st.header("6. Liquidación Cédula General")
 
 # Motor de cálculo: Renta Exenta Laboral (25%)
-# ¡Mejora! Ahora solo se calcula sobre la base del ingreso de trabajo (Formulario 210)
 renta_exenta_laboral_base = max(0, ingreso_neto_trabajo - total_deducciones_limitadas - re_afc_pensiones_aplicable - re_cesantias)
 renta_exenta_25 = max(0, renta_exenta_laboral_base * 0.25)
 renta_exenta_25_aplicable = min(renta_exenta_25, TOPE_25_EXENTO)
 
-# Aplicación del Límite Global (40% o 1.340 UVT) sobre el Ingreso Neto total
+# Aplicación del Límite Global (40% o 1.340 UVT)
 total_beneficios_sometidos = total_deducciones_limitadas + re_afc_pensiones_aplicable + re_cesantias + renta_exenta_25_aplicable
 limite_40 = ingreso_neto * 0.40
 limite_final_aplicable = min(limite_40, TOPE_GLOBAL_1340)
@@ -186,13 +252,20 @@ with st.expander("Ver detalles del límite del 40%"):
     st.write(f"- **Beneficios finalmente tomados (El menor):** ${beneficios_permitidos:,.0f}")
     st.write(f"- *Nota: La deducción por factura electrónica (${ded_factura_elec:,.0f}) se restó de forma independiente.*")
 
-# --- 7. RENTA POR COMPARACIÓN PATRIMONIAL ---
-st.header("6. Renta por Comparación Patrimonial")
+# --- 8. RENTA POR COMPARACIÓN PATRIMONIAL ---
+st.header("7. Renta por Comparación Patrimonial")
 col_pat1, col_pat2, col_pat3 = st.columns(3)
 with col_pat1:
     patrimonio_liquido_anterior = st.number_input("Patrimonio Líquido Año 2024", min_value=0.0, step=1000000.0)
 with col_pat2:
-    patrimonio_liquido_actual = st.number_input("Patrimonio Líquido Año 2025", min_value=0.0, step=1000000.0)
+    # Se pre-carga automáticamente con el valor calculado en la nueva tabla de patrimonio
+    patrimonio_liquido_actual = st.number_input(
+        "Patrimonio Líquido Año 2025", 
+        value=float(patrimonio_liquido_calc), 
+        min_value=0.0, 
+        step=1000000.0,
+        help="Calculado automáticamente desde la Tabla de Liquidación de Patrimonio (Sección 2)."
+    )
 with col_pat3:
     pasivos_inexistentes = st.number_input("Pasivos Inexistentes / Bienes Omitidos", min_value=0.0, step=100000.0)
 
@@ -202,11 +275,11 @@ renta_comparacion = max(0, diferencia_patrimonial - rentas_justificadas + pasivo
 
 renta_liquida_definitiva = renta_liquida_cedula_general
 if renta_comparacion > 0:
-    st.error(f"¡Alerta! Tienes una Renta Líquida por Comparación Patrimonial de: ${renta_comparacion:,.0f}. Revisa tus rentas exentas omitidas o ganancias ocasionales para justificar el patrimonio.")
+    st.error(f"¡Alerta! Tienes una Renta Líquida por Comparación Patrimonial de: ${renta_comparacion:,.0f}. Revisa tus rentas exentas omitidas o ganancias ocasionales para justificar el incremento.")
     renta_liquida_definitiva += renta_comparacion
 
-# --- 8. LIQUIDACIÓN DEL IMPUESTO Y ANTICIPO ---
-st.header("7. Liquidación de Impuestos y Saldo a Pagar")
+# --- 9. LIQUIDACIÓN DEL IMPUESTO Y ANTICIPO ---
+st.header("8. Liquidación de Impuestos y Saldo a Pagar")
 base_uvt = renta_liquida_definitiva / UVT_2025
 impuesto_uvt = calcular_impuesto_241(base_uvt)
 impuesto_pesos = impuesto_uvt * UVT_2025
