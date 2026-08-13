@@ -7,6 +7,7 @@ UVT_2025 = 49799
 TOPE_VIVIENDA = 1200 * UVT_2025             # $59.758.800
 TOPE_MEDICINA = 192 * UVT_2025              # $9.561.408
 TOPE_DEP_TRADICIONAL = 384 * UVT_2025       # $19.122.816 (32 UVT/mes)
+TOPE_1_DEP = 72 * UVT_2025                  # $3.585.528 (Por cada dependiente adicional)
 TOPE_DEP_ADICIONAL = 288 * UVT_2025         # $14.342.112 (72 UVT * máx 4)
 TOPE_AFC_PENSIONES = 3800 * UVT_2025        # $189.236.200 (Y limitado al 30% del ingreso)
 TOPE_FACTURA_ELEC = 240 * UVT_2025          # $11.951.760
@@ -52,7 +53,7 @@ with col_c:
         ]
     )
 
-# --- NUEVO: 3. LIQUIDACIÓN DE PATRIMONIO (Tabla Interactiva) ---
+# --- 3. LIQUIDACIÓN DE PATRIMONIO (Tabla Interactiva) ---
 st.header("2. Liquidación de Patrimonio (Bienes y Deudas)")
 st.caption("Relaciona tus activos y pasivos a 31 de diciembre de 2025. El sistema calculará tu Patrimonio Líquido y lo enviará al módulo de comparación patrimonial.")
 
@@ -178,22 +179,30 @@ with col_d1:
         help="Pagos por salud, medicina prepagada o seguros de salud para el contribuyente y beneficiarios. Límite legal: 16 UVT mensuales."
     )
     
-with col_d2:
-    ded_dep_tradicional = st.number_input(
-        f"Dependientes Económicos 10% (Máx ${TOPE_DEP_TRADICIONAL:,.0f})", 
-        min_value=0.0, max_value=float(TOPE_DEP_TRADICIONAL), step=100000.0,
-        help="Deducción del 10% de los ingresos brutos por tener hijos, cónyuge o padres dependientes. Límite legal: 32 UVT mensuales."
-    )
-    ded_dep_adicional = st.number_input(
-        f"Adicional por Dependientes Ley 2277 (Máx ${TOPE_DEP_ADICIONAL:,.0f})", 
-        min_value=0.0, max_value=float(TOPE_DEP_ADICIONAL), step=100000.0,
-        help="Nueva deducción de 72 UVT por cada dependiente, hasta máximo 4 dependientes. Se puede sumar a la deducción tradicional."
-    )
     ded_gmf = st.number_input(
         "Deducción 50% GMF (4x1000)", 
         min_value=0.0, step=10000.0,
         help="Puedes deducir el 50% del Gravamen a los Movimientos Financieros certificado por los bancos."
     )
+    
+with col_d2:
+    st.markdown("**Deducción Tradicional por Dependiente (Art. 387 ET)**")
+    ded_dep_tradicional = st.number_input(
+        f"Dependiente 10% (Máx ${TOPE_DEP_TRADICIONAL:,.0f})", 
+        min_value=0.0, max_value=float(TOPE_DEP_TRADICIONAL), step=100000.0,
+        help="Deducción del 10% de los ingresos brutos. Límite legal: 32 UVT mensuales (384 UVT anuales)."
+    )
+    
+    st.markdown("**Dependientes Adicionales Ley 2277 (Art. 336 ET)**")
+    st.caption(f"Hasta 4 dependientes. Tope individual: 72 UVT (${TOPE_1_DEP:,.0f}) anuales.")
+    
+    dep_1 = st.number_input(f"Dependiente Adicional 1 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help="Deducción fija de 72 UVT por dependiente.")
+    dep_2 = st.number_input(f"Dependiente Adicional 2 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help="Deducción fija de 72 UVT por dependiente.")
+    dep_3 = st.number_input(f"Dependiente Adicional 3 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help="Deducción fija de 72 UVT por dependiente.")
+    dep_4 = st.number_input(f"Dependiente Adicional 4 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help="Deducción fija de 72 UVT por dependiente.")
+    
+    ded_dep_adicional = dep_1 + dep_2 + dep_3 + dep_4
+    st.info(f"**Suma Adicionales:** ${ded_dep_adicional:,.0f} (Límite Global Adicionales: ${TOPE_DEP_ADICIONAL:,.0f})")
 
 total_deducciones_limitadas = ded_vivienda + ded_medicina + ded_dep_tradicional + ded_dep_adicional + ded_gmf
 
