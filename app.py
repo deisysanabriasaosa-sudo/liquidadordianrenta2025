@@ -171,45 +171,44 @@ with col_d1:
     ded_vivienda = st.number_input(
         f"Intereses de Vivienda (Máx ${TOPE_VIVIENDA:,.0f})", 
         min_value=0.0, max_value=float(TOPE_VIVIENDA), step=100000.0,
-        help="Intereses pagados por préstamos para adquisición de vivienda del contribuyente (Art. 119 ET). Límite legal: 100 UVT mensuales."
+        help=f"Norma: Art. 119 E.T. Forma de liquidación: Se deduce el 100% de los intereses pagados en el año por créditos hipotecarios o leasing habitacional, con un límite legal de 100 UVT mensuales. Esto equivale a un tope anual máximo de 1.200 UVT, es decir, ${TOPE_VIVIENDA:,.0f} COP."
     )
     ded_medicina = st.number_input(
         f"Medicina Prepagada (Máx ${TOPE_MEDICINA:,.0f})", 
         min_value=0.0, max_value=float(TOPE_MEDICINA), step=100000.0,
-        help="Pagos por salud, medicina prepagada o seguros de salud para el contribuyente y beneficiarios. Límite legal: 16 UVT mensuales."
+        help=f"Norma: Art. 387 E.T. Forma de liquidación: Se deduce el valor de los pagos a empresas de medicina prepagada o seguros de salud para el contribuyente, cónyuge o dependientes. Límite legal: 16 UVT mensuales, lo que equivale a un tope anual máximo de 192 UVT, es decir, ${TOPE_MEDICINA:,.0f} COP."
     )
     
     ded_gmf = st.number_input(
         "Deducción 50% GMF (4x1000)", 
         min_value=0.0, step=10000.0,
-        help="Puedes deducir el 50% del Gravamen a los Movimientos Financieros certificado por los bancos."
+        help="Norma: Art. 115 E.T. Forma de liquidación: Se deduce el 50% del Gravamen a los Movimientos Financieros (4x1000) que haya sido efectivamente pagado y certificado por la entidad financiera. No tiene un límite en UVT, el límite es exactamente la mitad de lo certificado."
     )
     
 with col_d2:
-    st.markdown("**Deducción Tradicional por Dependiente (Art. 387 ET)**")
+    st.markdown("**Deducción Tradicional por Dependiente (Art. 387 E.T.)**")
     
     # Límite del 10% vs Tope UVT
     limite_10_ingresos = ingresos_brutos * 0.10
     tope_dep_tradicional_aplicable = min(limite_10_ingresos, TOPE_DEP_TRADICIONAL)
     max_limit = float(tope_dep_tradicional_aplicable)
     
-    # Manejo seguro para prevenir errores de Streamlit si max_limit es 0
     if max_limit == 0:
         ded_dep_tradicional = st.number_input("Dependiente 10% (Ingresa ingresos primero)", value=0.0, disabled=True)
     else:
         ded_dep_tradicional = st.number_input(
             f"Dependiente 10% (Tope Dinámico: ${max_limit:,.0f})", 
             min_value=0.0, max_value=max_limit, step=100000.0,
-            help="El sistema ajusta el tope permitiendo el 10% de los ingresos brutos reportados sin exceder el máximo anual de 384 UVT."
+            help=f"Norma: Art. 387 E.T. Forma de liquidación: Se calcula permitiendo deducir hasta el 10% de los ingresos brutos reportados. Este valor no puede exceder el límite legal de 32 UVT mensuales, equivalente a 384 UVT anuales (${TOPE_DEP_TRADICIONAL:,.0f} COP). El sistema aplica automáticamente el menor de estos dos valores."
         )
     
-    st.markdown("**Dependientes Adicionales Ley 2277 (Art. 336 ET)**")
-    st.caption(f"Hasta 4 dependientes. Tope individual: 72 UVT (${TOPE_1_DEP:,.0f}) anuales.")
+    st.markdown("**Dependientes Adicionales Ley 2277 (Art. 336 E.T.)**")
+    st.caption(f"Norma: Art. 336 E.T. Forma de liquidación: Se permite deducir 72 UVT anuales (${TOPE_1_DEP:,.0f} COP) por cada dependiente, hasta un máximo de 4 dependientes. El límite global anual es de 288 UVT (${TOPE_DEP_ADICIONAL:,.0f} COP).")
     
-    dep_1 = st.number_input(f"Dependiente Adicional 1 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help="Deducción fija de 72 UVT por dependiente.")
-    dep_2 = st.number_input(f"Dependiente Adicional 2 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help="Deducción fija de 72 UVT por dependiente.")
-    dep_3 = st.number_input(f"Dependiente Adicional 3 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help="Deducción fija de 72 UVT por dependiente.")
-    dep_4 = st.number_input(f"Dependiente Adicional 4 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help="Deducción fija de 72 UVT por dependiente.")
+    dep_1 = st.number_input(f"Dependiente Adicional 1 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help=f"Deducción fija de 72 UVT (${TOPE_1_DEP:,.0f} COP) por dependiente.")
+    dep_2 = st.number_input(f"Dependiente Adicional 2 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help=f"Deducción fija de 72 UVT (${TOPE_1_DEP:,.0f} COP) por dependiente.")
+    dep_3 = st.number_input(f"Dependiente Adicional 3 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help=f"Deducción fija de 72 UVT (${TOPE_1_DEP:,.0f} COP) por dependiente.")
+    dep_4 = st.number_input(f"Dependiente Adicional 4 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=100000.0, help=f"Deducción fija de 72 UVT (${TOPE_1_DEP:,.0f} COP) por dependiente.")
     
     ded_dep_adicional = dep_1 + dep_2 + dep_3 + dep_4
     st.info(f"**Suma Adicionales:** ${ded_dep_adicional:,.0f} (Límite Global Adicionales: ${TOPE_DEP_ADICIONAL:,.0f})")
@@ -218,12 +217,12 @@ total_deducciones_limitadas = ded_vivienda + ded_medicina + ded_dep_tradicional 
 
 # --- APÉNDICE DE CONSULTA ---
 with st.expander("📖 Apéndice de Consulta Legal: Límite Deducción por Dependientes (Art. 387 E.T.)"):
-    st.markdown("""
+    st.markdown(f"""
     **Referencia: Estatuto Tributario y doctrina DIAN**
     
     Para efectos de la deducción tradicional por dependientes, el **Artículo 387 del Estatuto Tributario** establece dos condiciones simultáneas:
     1. **Condición porcentual:** Se podrá deducir hasta el diez por ciento (10%) del total de los ingresos brutos.
-    2. **Condición de techo absoluto:** Esta deducción no podrá exceder de treinta y dos (32) UVT mensuales, lo que se traduce en un máximo de 384 UVT anuales.
+    2. **Condición de techo absoluto:** Esta deducción no podrá exceder de treinta y dos (32) UVT mensuales, lo que se traduce en un máximo de 384 UVT anuales (**${TOPE_DEP_TRADICIONAL:,.0f} COP**).
     
     **Aplicación normativa en este liquidador:**
     Para garantizar que la declaración se ajuste a derecho y evitar rechazos o glosas por parte de la DIAN, el sistema evalúa ambos parámetros en tiempo real y restringe automáticamente la casilla para que **solo permita tomar el menor valor resultante** entre el 10% de sus ingresos brutos y el tope de las 384 UVT.
@@ -237,7 +236,7 @@ with col_re1:
     re_afc_pensiones = st.number_input(
         f"Aportes Voluntarios Pensión y AFC (Máx ${TOPE_AFC_PENSIONES:,.0f})", 
         min_value=0.0, max_value=float(TOPE_AFC_PENSIONES), step=100000.0,
-        help="Aportes a cuentas AFC o fondos voluntarios. Limitado al 30% del ingreso laboral o tributario del año, sin exceder 3.800 UVT."
+        help=f"Norma: Art. 126-1 y 126-4 E.T. Forma de liquidación: Se suma el valor aportado a fondos voluntarios de pensiones y cuentas AFC. El beneficio está limitado al 30% del ingreso laboral o tributario del año, y en ningún caso puede exceder el límite absoluto de 3.800 UVT anuales (${TOPE_AFC_PENSIONES:,.0f} COP)."
     )
     # Ajuste automático del tope del 30%
     limite_30_ingreso = ingresos_brutos * 0.30
@@ -247,7 +246,7 @@ with col_re2:
     re_cesantias = st.number_input(
         "Cesantías e Intereses de Cesantías", 
         min_value=0.0, step=100000.0,
-        help="El valor del ingreso reconocido por cesantías e intereses a las cesantías, que entra como ingreso bruto pero se resta como exento según los límites del Art 206."
+        help="Norma: Art. 206 Numeral 4 E.T. Forma de liquidación: Renta exenta aplicable al ingreso reconocido por cesantías e intereses. Su cálculo oficial depende del salario promedio de los últimos 6 meses del contribuyente (tabla de exención escalonada con tope de 350 UVT mensuales). Se debe ingresar aquí el valor exento final ya depurado."
     )
 
 # --- 7. CÁLCULO DE LÍMITES Y RENTA EXENTA LABORAL ---
@@ -265,7 +264,7 @@ limite_final_aplicable = min(limite_40, TOPE_GLOBAL_1340)
 
 beneficios_permitidos = min(total_beneficios_sometidos, limite_final_aplicable)
 
-# --- MEJORA: Deducción especial 1% compras factura electrónica ---
+# Deducción especial 1% compras factura electrónica
 st.subheader("Beneficio Adicional (Sin límite del 40%)")
 col_fe1, col_fe2 = st.columns(2)
 
@@ -284,21 +283,31 @@ with col_fe2:
         f"Valor a Deducir (1% Aplicado - Máx ${TOPE_FACTURA_ELEC:,.0f})", 
         value=f"${ded_factura_elec:,.0f}", 
         disabled=True,
-        help="El sistema calcula el 1% automáticamente y aplica el límite máximo legal de 240 UVT."
+        help=f"Norma: Art. 336 Numeral 5 E.T. Forma de liquidación: Se calcula el 1% del valor total de las compras sustentadas. El valor a restar no puede exceder las 240 UVT anuales (${TOPE_FACTURA_ELEC:,.0f} COP). Esta deducción NO se somete al límite global del 40%."
     )
     if calculo_1_porciento > TOPE_FACTURA_ELEC:
-        st.caption(f"⚠️ El 1% de tus compras (${calculo_1_porciento:,.0f}) supera el tope. Se aplicará el máximo legal permitido.")
+        st.caption(f"⚠️ El 1% de tus compras (${calculo_1_porciento:,.0f}) supera el tope. Se aplicará el máximo legal permitido de 240 UVT (${TOPE_FACTURA_ELEC:,.0f}).")
 
 renta_liquida_cedula_general = max(0, renta_liquida_antes_beneficios - beneficios_permitidos - ded_factura_elec)
 
 # --- PANEL DE RESUMEN ---
 st.info(f"**Renta Líquida Gravable Cédula General:** ${renta_liquida_cedula_general:,.0f}")
-with st.expander("Ver detalles del límite del 40%"):
+with st.expander("Ver detalles de los Límites Legales (Renta Exenta 25% y Límite Global 40%)"):
+    st.markdown(f"""
+    **1. Renta Exenta Laboral (Art. 206 Numeral 10 E.T.)**
+    *   **Forma de liquidación:** Se calcula tomando el ingreso neto laboral y restando las deducciones y rentas exentas imputables a dicha renta. Al subtotal se le aplica el 25%.
+    *   **Límite Legal:** El resultado no puede exceder las 790 UVT anuales (**${TOPE_25_EXENTO:,.0f} COP**).
+    
+    **2. Límite Global de Beneficios (Art. 336 E.T.)**
+    *   **Forma de liquidación:** Se suman todas las deducciones imputables y rentas exentas (incluida la exenta del 25%). La suma de estos beneficios no puede superar el 40% del total del Ingreso Neto de la Cédula General.
+    *   **Límite Legal Adicional:** Dicho 40% tiene a su vez un tope máximo absoluto de 1.340 UVT anuales (**${TOPE_GLOBAL_1340:,.0f} COP**). El liquidador aplica la limitante más estricta.
+    """)
+    st.write("---")
     st.write(f"- Total Deducciones y Exentas ingresadas: ${total_beneficios_sometidos:,.0f}")
     st.write(f"- Límite del 40% del Ingreso Neto: ${limite_40:,.0f}")
-    st.write(f"- Límite en UVT (1340 UVT): ${TOPE_GLOBAL_1340:,.0f}")
-    st.write(f"- **Beneficios finalmente tomados (El menor):** ${beneficios_permitidos:,.0f}")
-    st.write(f"- *Nota: La deducción por factura electrónica (${ded_factura_elec:,.0f}) se restó de forma independiente.*")
+    st.write(f"- Límite en UVT (1.340 UVT): ${TOPE_GLOBAL_1340:,.0f}")
+    st.write(f"- **Beneficios finalmente tomados (El menor valor permitido):** ${beneficios_permitidos:,.0f}")
+    st.write(f"- *Nota: La deducción por factura electrónica (${ded_factura_elec:,.0f}) se restó de forma independiente a los límites anteriores.*")
 
 # --- 8. RENTA POR COMPARACIÓN PATRIMONIAL ---
 st.header("7. Renta por Comparación Patrimonial")
@@ -340,23 +349,23 @@ with col_liq1:
     descuentos_tributarios = st.number_input(
         "Descuentos Tributarios (Donaciones, I+D+i, etc.)", 
         min_value=0.0, step=100000.0,
-        help="Se restan directamente del impuesto. Despliega el panel de abajo para ver la normatividad."
+        help="Se restan directamente del impuesto. Despliega el panel de abajo para ver la normatividad y el método de liquidación."
     )
     
     # Panel explicativo de Descuentos Tributarios
-    with st.expander("📚 Ver conceptos legales de Descuentos Tributarios (Art. 253 al 257 ET)"):
+    with st.expander("📚 Ver conceptos legales de Descuentos Tributarios (Art. 253 al 257 E.T.)"):
         st.markdown("""
-        **Conceptos válidos según el Estatuto Tributario:**
-        1. **Donaciones a ESAL (Art. 257):** 25% del valor donado a entidades del Régimen Tributario Especial o públicas.
-        2. **Impuestos pagados en el exterior (Art. 254):** Para residentes que tributaron fuera de Colombia.
-        3. **Inversiones I+D+i (Art. 256):** 25% invertido en proyectos avalados en ciencia y tecnología.
-        4. **Inversiones en medio ambiente (Art. 253):** 25% de la inversión directa avalada por ANLA/CAR.
-        5. **Otros (25%):** Red de Bibliotecas, Parques Naturales, Becas ICETEX, Innpulsa.
+        **Norma aplicable y Forma de liquidación:**
+        Los descuentos tributarios se restan directamente del impuesto de renta (no de los ingresos). Se calculan aplicando un porcentaje sobre la inversión o donación realizada:
+        1. **Donaciones a ESAL (Art. 257):** Se liquida tomando el 25% del valor donado a entidades del Régimen Tributario Especial o públicas.
+        2. **Impuestos pagados en el exterior (Art. 254):** Aplica para residentes fiscales colombianos, tomando el impuesto de renta pagado en el otro país sobre la renta de fuente extranjera (sometido a fórmulas de límite según el impuesto en Colombia).
+        3. **Inversiones I+D+i (Art. 256):** Se liquida calculando el 25% de lo invertido en proyectos calificados de ciencia y tecnología.
+        4. **Inversiones en medio ambiente (Art. 253):** Se liquida tomando el 25% de la inversión directa acreditada por autoridades ambientales (ANLA/CAR).
         
-        ⚠️ **Regla General del Límite (Art. 258 ET):** 
-        Los descuentos tributarios no pueden exceder el **25% del impuesto básico de renta**.
+        ⚠️ **Regla General del Límite (Art. 258 E.T.):** 
+        La liquidación concurrente de los descuentos tributarios mencionados (salvo excepciones precisas de ley) **no podrá exceder el 25% del impuesto sobre la renta** a cargo del contribuyente en el respectivo año gravable.
         """)
-        st.info(f"💡 Para este caso específico, el límite legal máximo a descontar sugerido es: **${limite_legal_descuentos:,.0f}**")
+        st.info(f"💡 Para este caso específico, el límite legal máximo a descontar sugerido equivale a: **${limite_legal_descuentos:,.0f} COP**")
 
     retenciones = st.number_input("Retenciones en la fuente practicadas en 2025", min_value=0.0, step=100000.0)
     impuesto_neto_anterior = st.number_input("Impuesto neto de renta del año anterior (2024)", min_value=0.0, step=100000.0, help="Obligatorio para calcular el anticipo por el Procedimiento 2 (Promedio).")
@@ -384,12 +393,12 @@ saldo_total = (impuesto_neto + anticipo_final) - retenciones - saldo_favor_anter
 st.markdown("---")
 
 # Mostrar análisis de la elección del anticipo al usuario
-with st.expander("Ver análisis detallado del Anticipo de Renta (Art 807 ET)"):
-    st.write(f"Según la ley, puedes elegir el procedimiento que arroje el menor valor a pagar:")
-    st.write(f"- **Porcentaje aplicado:** {porcentaje_anticipo * 100}%")
-    st.write(f"- **Procedimiento 1 (Basado en impuesto actual):** ${anticipo_metodo_1:,.0f}")
-    st.write(f"- **Procedimiento 2 (Basado en promedio con año anterior):** ${anticipo_metodo_2:,.0f}")
-    st.success(f"**El sistema seleccionó automáticamente el menor valor: ${anticipo_final:,.0f}**")
+with st.expander("Ver análisis detallado del Anticipo de Renta (Art 807 E.T.)"):
+    st.write(f"Norma: Art. 807 E.T. Forma de liquidación: Según la ley, el sistema liquida dos procedimientos y puedes elegir el que arroje el menor valor a pagar:")
+    st.write(f"- **Porcentaje aplicado:** {porcentaje_anticipo * 100}% (según antigüedad declarando)")
+    st.write(f"- **Procedimiento 1 (Basado en impuesto neto actual):** (${impuesto_neto:,.0f} * {porcentaje_anticipo}) - ${retenciones:,.0f} = ${anticipo_metodo_1:,.0f}")
+    st.write(f"- **Procedimiento 2 (Basado en promedio con año anterior):** (Promedio ${promedio_impuestos:,.0f} * {porcentaje_anticipo}) - ${retenciones:,.0f} = ${anticipo_metodo_2:,.0f}")
+    st.success(f"**El sistema seleccionó automáticamente el menor valor: ${anticipo_final:,.0f} COP**")
 
 col_res1, col_res2, col_res3 = st.columns(3)
 col_res1.metric(label="IMPUESTO NETO A CARGO", value=f"${impuesto_neto:,.0f}")
