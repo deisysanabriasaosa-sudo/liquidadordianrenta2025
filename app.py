@@ -188,7 +188,7 @@ with col_d1:
 with col_d2:
     st.markdown("**Deducción Tradicional por Dependiente (Art. 387 ET)**")
     
-    # --- MEJORA: Límite del 10% vs Tope UVT ---
+    # Límite del 10% vs Tope UVT
     limite_10_ingresos = ingresos_brutos * 0.10
     tope_dep_tradicional_aplicable = min(limite_10_ingresos, TOPE_DEP_TRADICIONAL)
     max_limit = float(tope_dep_tradicional_aplicable)
@@ -265,13 +265,29 @@ limite_final_aplicable = min(limite_40, TOPE_GLOBAL_1340)
 
 beneficios_permitidos = min(total_beneficios_sometidos, limite_final_aplicable)
 
-# Deducción especial: 1% compras factura electrónica (SIN LÍMITE DEL 40%)
+# --- MEJORA: Deducción especial 1% compras factura electrónica ---
 st.subheader("Beneficio Adicional (Sin límite del 40%)")
-ded_factura_elec = st.number_input(
-    f"1% de Compras con Factura Electrónica (Máx ${TOPE_FACTURA_ELEC:,.0f})", 
-    min_value=0.0, max_value=float(TOPE_FACTURA_ELEC), step=10000.0,
-    help="El 1% del valor de tus compras sustentadas con factura electrónica de venta, sin exceder 240 UVT. No se somete al límite del 40%."
-)
+col_fe1, col_fe2 = st.columns(2)
+
+with col_fe1:
+    total_compras_factura_elec = st.number_input(
+        "Valor Total Compras con Factura Electrónica", 
+        min_value=0.0, step=100000.0,
+        help="Ingresa el valor TOTAL de tus compras pagadas por medios electrónicos y soportadas con factura electrónica de venta."
+    )
+
+with col_fe2:
+    calculo_1_porciento = total_compras_factura_elec * 0.01
+    ded_factura_elec = min(calculo_1_porciento, TOPE_FACTURA_ELEC)
+    
+    st.text_input(
+        f"Valor a Deducir (1% Aplicado - Máx ${TOPE_FACTURA_ELEC:,.0f})", 
+        value=f"${ded_factura_elec:,.0f}", 
+        disabled=True,
+        help="El sistema calcula el 1% automáticamente y aplica el límite máximo legal de 240 UVT."
+    )
+    if calculo_1_porciento > TOPE_FACTURA_ELEC:
+        st.caption(f"⚠️ El 1% de tus compras (${calculo_1_porciento:,.0f}) supera el tope. Se aplicará el máximo legal permitido.")
 
 renta_liquida_cedula_general = max(0, renta_liquida_antes_beneficios - beneficios_permitidos - ded_factura_elec)
 
