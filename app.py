@@ -57,54 +57,93 @@ with col_c:
 st.header("2. Liquidación de Patrimonio (Bienes y Deudas)")
 st.caption("Relaciona tus activos y pasivos a 31 de diciembre de 2025. El sistema calculará tu Patrimonio Líquido y lo enviará al módulo de comparación patrimonial.")
 
-# Encabezados de la tabla
-col_p1, col_p2, col_p3 = st.columns([2, 1.5, 3])
-col_p1.markdown("**Naturaleza del Bien**")
-col_p2.markdown("**Valor Fiscal a 31 Dic (COP)**")
-col_p3.markdown("**Regla de Valoración (Estatuto Tributario)**")
 st.markdown("---")
 
 # Fila 1: Efectivo
 c1, c2, c3 = st.columns([2, 1.5, 3])
-c1.write("Efectivo y saldos en cuentas bancarias")
+c1.write("**1. Efectivo y saldos en cuentas bancarias**")
 val_efectivo = c2.number_input("Efectivo", min_value=0.0, step=1000000.0, label_visibility="collapsed")
-c3.caption("Art. 268 ET: Valor exacto del saldo a 31 de diciembre.")
+c3.caption("Art. 268 E.T.: Valor exacto del saldo a 31 de diciembre.")
 
-# Fila 2: Inversiones
-c1, c2, c3 = st.columns([2, 1.5, 3])
-c1.write("Inversiones, acciones y aportes")
-val_inversiones = c2.number_input("Inversiones", min_value=0.0, step=1000000.0, label_visibility="collapsed")
-c3.caption("Art. 272 ET: Costo fiscal (valor de adquisición de la acción/aporte).")
+# --- MEJORA: Fila 2 (Inversiones y CDTs) ---
+st.markdown("**2. Inversiones, acciones y aportes (CDTs)**")
+with st.expander("Desplegar detalle de CDTs e Inversiones (hasta 5)"):
+    col_cdt1, col_cdt2 = st.columns(2)
+    val_cdt1 = col_cdt1.number_input("[Casilla 1] Valor CDT / Inversión 1", min_value=0.0, step=1000000.0)
+    val_cdt2 = col_cdt2.number_input("[Casilla 2] Valor CDT / Inversión 2", min_value=0.0, step=1000000.0)
+    val_cdt3 = col_cdt1.number_input("[Casilla 3] Valor CDT / Inversión 3", min_value=0.0, step=1000000.0)
+    val_cdt4 = col_cdt2.number_input("[Casilla 4] Valor CDT / Inversión 4", min_value=0.0, step=1000000.0)
+    val_cdt5 = col_cdt1.number_input("[Casilla 5] Valor CDT / Inversión 5", min_value=0.0, step=1000000.0)
+    val_otras_inv = col_cdt2.number_input("Otras inversiones / Acciones", min_value=0.0, step=1000000.0)
+    
+    val_inversiones = val_cdt1 + val_cdt2 + val_cdt3 + val_cdt4 + val_cdt5 + val_otras_inv
+    st.info(f"Total Inversiones (Art. 272 E.T.): ${val_inversiones:,.0f}")
 
 # Fila 3: Cuentas por cobrar
 c1, c2, c3 = st.columns([2, 1.5, 3])
-c1.write("Cuentas por cobrar (Préstamos a terceros)")
+c1.write("**3. Cuentas por cobrar (Préstamos a terceros)**")
 val_cxc = c2.number_input("CxC", min_value=0.0, step=1000000.0, label_visibility="collapsed")
-c3.caption("Art. 270 ET: Valor nominal del crédito o deuda a tu favor.")
+c3.caption("Art. 270 E.T.: Valor nominal del crédito o deuda a tu favor.")
 
-# Fila 4: Inmuebles
-c1, c2, c3 = st.columns([2, 1.5, 3])
-c1.write("Bienes Inmuebles (Casas, apartamentos, fincas)")
-val_inmuebles = c2.number_input("Inmuebles", min_value=0.0, step=1000000.0, label_visibility="collapsed")
-c3.caption("Art. 277 ET: El mayor valor entre el costo de adquisición, avalúo catastral o autoavalúo.")
+# --- MEJORA: Fila 4 (Inmuebles y actualización patrimonial) ---
+st.markdown("**4. Bienes Inmuebles (Casas, apartamentos, fincas)**")
+with st.expander("Desplegar detalle de Bienes Inmuebles (hasta 5 propiedades)"):
+    st.caption("Nota: Ingresa el valor del año anterior y el % de reajuste (Art. 70 E.T.) para que el activo sufra la actualización legal, o bien ingresa el avalúo catastral. El sistema liquida automáticamente el mayor valor (Art. 277 E.T.).")
+    val_inmuebles = 0.0
+    for i in range(1, 6):
+        st.markdown(f"**Inmueble {i}**")
+        c_inm1, c_inm2, c_inm3, c_inm4 = st.columns(4)
+        val_ant = c_inm1.number_input(f"[Casilla {i}.1] Valor declarado año anterior", min_value=0.0, step=1000000.0, key=f"inm_ant_{i}")
+        reajuste = c_inm2.number_input(f"[Casilla {i}.2] % Reajuste fiscal", min_value=0.0, step=0.01, value=0.0, key=f"inm_reajuste_{i}", help="Porcentaje de ajuste fiscal fijado por el Gobierno Nacional para el año gravable.")
+        val_catastral = c_inm3.number_input(f"[Casilla {i}.3] Avalúo Catastral 2025", min_value=0.0, step=1000000.0, key=f"inm_cat_{i}")
+        
+        # Fórmula de liquidación automática
+        val_ajustado = val_ant * (1 + (reajuste / 100))
+        val_declarar = max(val_ajustado, val_catastral)
+        
+        c_inm4.text_input(f"[Casilla {i}.4] Valor fiscal a declarar", value=f"${val_declarar:,.0f}", disabled=True, key=f"inm_dec_{i}")
+        val_inmuebles += val_declarar
+    st.info(f"Total Inmuebles a declarar: ${val_inmuebles:,.0f}")
 
-# Fila 5: Vehículos
-c1, c2, c3 = st.columns([2, 1.5, 3])
-c1.write("Vehículos y maquinaria")
-val_vehiculos = c2.number_input("Vehículos", min_value=0.0, step=1000000.0, label_visibility="collapsed")
-c3.caption("Art. 276 ET: Costo de adquisición o avalúo comercial fijado por el MinTransporte.")
+# --- APÉNDICE DE RECOMENDACIÓN INMUEBLES ---
+with st.expander("💡 Apéndice de Consulta Legal: Recomendaciones sobre Avalúo Comercial y Repercusiones Futuras en Inmuebles"):
+    st.markdown("""
+    **Normatividad aplicable: Artículos 70, 72, 73 y 277 del Estatuto Tributario.**
+    
+    Al momento de declarar un bien inmueble, la ley tributaria exige que el valor patrimonial sea **el mayor** entre:
+    1. El costo de adquisición o costo fiscal declarado el año anterior.
+    2. El avalúo catastral (o autoavalúo) del año gravable en curso.
+    3. El costo fiscal ajustado por el porcentaje de reajuste anual decretado por el Gobierno Nacional (Art. 70 E.T.).
+    
+    **⚠️ Recomendación Estratégica:**
+    Cuando dista significativamente el avalúo catastral del **valor comercial o posible valor de venta**, se recomienda ir actualizando el costo fiscal del inmueble en cada declaración. Para ello, utiliza la casilla del porcentaje de reajuste para que el activo "sufra" la actualización sobre el mismo valor del año anterior, o bien aplica los múltiplos del Art. 73 E.T.
+    
+    **Repercusiones Futuras (Impuesto de Ganancia Ocasional):**
+    Si decides vender el inmueble y mantienes registrado únicamente el avalúo catastral (que en Colombia suele ser muy inferior a los precios del mercado real), al momento de la venta la utilidad generada (Precio de Venta - Costo Fiscal) será gigantesca. Esto te obligará a pagar un **Impuesto de Ganancia Ocasional del 15%** sobre una base muy alta. Al actualizar paulatinamente el costo fiscal mediante los reajustes de ley (registrando el mismo valor del año anterior y sumándole el ajuste porcentual), incrementas de forma legal el valor fiscal del inmueble, reduciendo de manera radical el impacto tributario futuro al momento de realizar la venta.
+    """)
+
+# --- MEJORA: Fila 5 (Vehículos) ---
+st.markdown("**5. Vehículos y maquinaria**")
+with st.expander("Desplegar detalle de Vehículos (hasta 2 vehículos)"):
+    col_veh1, col_veh2 = st.columns(2)
+    val_veh1 = col_veh1.number_input("[Casilla 1] Valor Vehículo 1", min_value=0.0, step=1000000.0, help="Art. 276 E.T. Costo de adquisición o avalúo comercial fijado por MinTransporte.")
+    val_veh2 = col_veh2.number_input("[Casilla 2] Valor Vehículo 2", min_value=0.0, step=1000000.0)
+    val_otros_veh = st.number_input("Otros vehículos / Maquinaria", min_value=0.0, step=1000000.0)
+    
+    val_vehiculos = val_veh1 + val_veh2 + val_otros_veh
+    st.info(f"Total Vehículos a declarar: ${val_vehiculos:,.0f}")
 
 # Fila 6: Activos Biológicos
 c1, c2, c3 = st.columns([2, 1.5, 3])
-c1.write("Activos biológicos (Semovientes, ganado, cultivos)")
+c1.write("**6. Activos biológicos (Semovientes, ganado, cultivos)**")
 val_biologicos = c2.number_input("Biologicos", min_value=0.0, step=1000000.0, label_visibility="collapsed")
-c3.caption("Art. 276-2 ET: Costo fiscal o valor comercial según aplique contablemente para no obligados a llevar contabilidad.")
+c3.caption("Art. 276-2 E.T.: Costo fiscal o valor comercial según aplique contablemente.")
 
 # Fila 7: Otros Activos
 c1, c2, c3 = st.columns([2, 1.5, 3])
-c1.write("Otros activos (Joyas, muebles, enseres)")
+c1.write("**7. Otros activos (Joyas, muebles, enseres)**")
 val_otros_activos = c2.number_input("Otros", min_value=0.0, step=1000000.0, label_visibility="collapsed")
-c3.caption("Art. 277 y ss ET: Costo de adquisición o costo fiscal.")
+c3.caption("Art. 277 y ss E.T.: Costo de adquisición o costo fiscal.")
 
 st.markdown("---")
 
@@ -112,7 +151,7 @@ st.markdown("---")
 c1, c2, c3 = st.columns([2, 1.5, 3])
 c1.markdown("**Menos: Pasivos (Deudas con bancos o terceros)**")
 val_pasivos = c2.number_input("Pasivos", min_value=0.0, step=1000000.0, label_visibility="collapsed")
-c3.caption("Art. 283 ET: Deudas reales y consolidadas, respaldadas con documentos idóneos (pagarés, extractos).")
+c3.caption("Art. 283 E.T.: Deudas reales y consolidadas, respaldadas con documentos idóneos (pagarés, extractos).")
 
 # Cálculos Totales Patrimonio
 patrimonio_bruto_calc = val_efectivo + val_inversiones + val_cxc + val_inmuebles + val_vehiculos + val_biologicos + val_otros_activos
