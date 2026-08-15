@@ -33,9 +33,9 @@ st.write(f"**Valor UVT 2025:** ${UVT_2025:,.0f} COP")
 st.header("1. Datos del Contribuyente")
 col_a, col_b, col_c = st.columns(3)
 with col_a:
-    nombre = st.text_input("Nombre Completo")
+    nombre = st.text_input("Nombre Completo", value="Deisy Carolina Sanabria Saosa")
 with col_b:
-    nit = st.text_input("Cédula / NIT")
+    nit = st.text_input("Cédula / NIT", value="1098665319")
 with col_c:
     actividad_economica = st.selectbox(
         "Actividad Económica Principal (CIIU)",
@@ -187,11 +187,21 @@ with col_d1:
     
 with col_d2:
     st.markdown("**Deducción Tradicional por Dependiente (Art. 387 ET)**")
-    ded_dep_tradicional = st.number_input(
-        f"Dependiente 10% (Máx ${TOPE_DEP_TRADICIONAL:,.0f})", 
-        min_value=0.0, max_value=float(TOPE_DEP_TRADICIONAL), step=100000.0,
-        help="Deducción del 10% de los ingresos brutos. Límite legal: 32 UVT mensuales (384 UVT anuales)."
-    )
+    
+    # --- MEJORA: Límite del 10% vs Tope UVT ---
+    limite_10_ingresos = ingresos_brutos * 0.10
+    tope_dep_tradicional_aplicable = min(limite_10_ingresos, TOPE_DEP_TRADICIONAL)
+    max_limit = float(tope_dep_tradicional_aplicable)
+    
+    # Manejo seguro para prevenir errores de Streamlit si max_limit es 0
+    if max_limit == 0:
+        ded_dep_tradicional = st.number_input("Dependiente 10% (Ingresa ingresos primero)", value=0.0, disabled=True)
+    else:
+        ded_dep_tradicional = st.number_input(
+            f"Dependiente 10% (Tope Dinámico: ${max_limit:,.0f})", 
+            min_value=0.0, max_value=max_limit, step=100000.0,
+            help="El sistema ajusta el tope permitiendo el 10% de los ingresos brutos reportados sin exceder el máximo anual de 384 UVT."
+        )
     
     st.markdown("**Dependientes Adicionales Ley 2277 (Art. 336 ET)**")
     st.caption(f"Hasta 4 dependientes. Tope individual: 72 UVT (${TOPE_1_DEP:,.0f}) anuales.")
@@ -205,6 +215,19 @@ with col_d2:
     st.info(f"**Suma Adicionales:** ${ded_dep_adicional:,.0f} (Límite Global Adicionales: ${TOPE_DEP_ADICIONAL:,.0f})")
 
 total_deducciones_limitadas = ded_vivienda + ded_medicina + ded_dep_tradicional + ded_dep_adicional + ded_gmf
+
+# --- APÉNDICE DE CONSULTA ---
+with st.expander("📖 Apéndice de Consulta Legal: Límite Deducción por Dependientes (Art. 387 E.T.)"):
+    st.markdown("""
+    **Referencia: Estatuto Tributario y doctrina DIAN**
+    
+    Para efectos de la deducción tradicional por dependientes, el **Artículo 387 del Estatuto Tributario** establece dos condiciones simultáneas:
+    1. **Condición porcentual:** Se podrá deducir hasta el diez por ciento (10%) del total de los ingresos brutos.
+    2. **Condición de techo absoluto:** Esta deducción no podrá exceder de treinta y dos (32) UVT mensuales, lo que se traduce en un máximo de 384 UVT anuales.
+    
+    **Aplicación normativa en este liquidador:**
+    Para garantizar que la declaración se ajuste a derecho y evitar rechazos o glosas por parte de la DIAN, el sistema evalúa ambos parámetros en tiempo real y restringe automáticamente la casilla para que **solo permita tomar el menor valor resultante** entre el 10% de sus ingresos brutos y el tope de las 384 UVT.
+    """)
 
 # --- 6. RENTAS EXENTAS (Con límites en COP) ---
 st.header("5. Rentas Exentas")
