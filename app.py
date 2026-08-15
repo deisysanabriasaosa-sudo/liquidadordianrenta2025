@@ -311,29 +311,65 @@ with st.expander("Ver detalles de los Límites Legales (Renta Exenta 25% y Lími
 
 # --- 8. RENTA POR COMPARACIÓN PATRIMONIAL ---
 st.header("7. Renta por Comparación Patrimonial")
+st.caption("Esta sección verifica si el incremento de tu patrimonio de un año a otro está justificado matemáticamente por los ingresos reportados.")
+
 col_pat1, col_pat2, col_pat3 = st.columns(3)
 with col_pat1:
-    patrimonio_liquido_anterior = st.number_input("Patrimonio Líquido Año 2024", min_value=0.0, step=1000000.0)
+    patrimonio_liquido_anterior = st.number_input("[Casilla 1] Patrimonio Líquido Año 2024", min_value=0.0, step=1000000.0, help="Patrimonio líquido declarado en el año inmediatamente anterior.")
 with col_pat2:
-    # Se pre-carga automáticamente con el valor calculado en la nueva tabla de patrimonio
     patrimonio_liquido_actual = st.number_input(
-        "Patrimonio Líquido Año 2025", 
+        "[Casilla 2] Patrimonio Líquido Año 2025", 
         value=float(patrimonio_liquido_calc), 
         min_value=0.0, 
         step=1000000.0,
         help="Calculado automáticamente desde la Tabla de Liquidación de Patrimonio (Sección 2)."
     )
 with col_pat3:
-    pasivos_inexistentes = st.number_input("Pasivos Inexistentes / Bienes Omitidos", min_value=0.0, step=100000.0)
+    pasivos_inexistentes = st.number_input("[Casilla 3] Pasivos Inexistentes / Bienes Omitidos", min_value=0.0, step=100000.0, help="Art. 239-1 E.T. Se suman directamente a la renta líquida por comparación.")
 
-diferencia_patrimonial = max(0, patrimonio_liquido_actual - patrimonio_liquido_anterior)
+# Cálculos de la liquidación patrimonial
+diferencia_patrimonial_bruta = max(0, patrimonio_liquido_actual - patrimonio_liquido_anterior)
 rentas_justificadas = renta_liquida_cedula_general + incrngo + beneficios_permitidos + ded_factura_elec
-renta_comparacion = max(0, diferencia_patrimonial - rentas_justificadas + pasivos_inexistentes)
+renta_comparacion = max(0, diferencia_patrimonial_bruta - rentas_justificadas + pasivos_inexistentes)
+
+# Mostrar en pantalla las operaciones que originan el resultado
+st.markdown("**Operaciones de Liquidación (Fórmula de Comparación de Patrimonios):**")
+st.code(f"""
+A. Diferencia Patrimonial Bruta = [Casilla 2] - [Casilla 1]
+   ${patrimonio_liquido_actual:,.0f} - ${patrimonio_liquido_anterior:,.0f} = ${patrimonio_liquido_actual - patrimonio_liquido_anterior:,.0f}
+   (Base sujeta a justificar: ${diferencia_patrimonial_bruta:,.0f})
+
+B. [Casilla 4] Rentas Justificadas = Renta Líquida Gravable + INCRNGO + Exenciones y Deducciones permitidas
+   ${renta_liquida_cedula_general:,.0f} + ${incrngo:,.0f} + ${(beneficios_permitidos + ded_factura_elec):,.0f} = ${rentas_justificadas:,.0f}
+
+C. Renta por Comparación Patrimonial = (Base a Justificar + [Casilla 3]) - [Casilla 4]
+   (${diferencia_patrimonial_bruta:,.0f} + ${pasivos_inexistentes:,.0f}) - ${rentas_justificadas:,.0f} = ${renta_comparacion:,.0f}
+""", language="text")
 
 renta_liquida_definitiva = renta_liquida_cedula_general
 if renta_comparacion > 0:
-    st.error(f"¡Alerta! Tienes una Renta Líquida por Comparación Patrimonial de: ${renta_comparacion:,.0f}. Revisa tus rentas exentas omitidas o ganancias ocasionales para justificar el incremento.")
+    st.error(f"¡Alerta! Tienes una Renta Líquida por Comparación Patrimonial de: ${renta_comparacion:,.0f}. Revisa tus rentas exentas omitidas, anticipos o ganancias ocasionales para justificar el incremento.")
     renta_liquida_definitiva += renta_comparacion
+else:
+    st.success("Variación patrimonial debidamente justificada. No se genera renta por comparación patrimonial.")
+
+# --- Apéndice de Consulta Legal ---
+with st.expander("📖 Apéndice de Consulta Legal: Renta por Comparación Patrimonial (Arts. 236 al 239-1 E.T.)"):
+    st.markdown("""
+    **Fundamento normativo aplicable al control de patrimonios de la DIAN:**
+    
+    1. **Renta por comparación de patrimonios (Art. 236 E.T.):** 
+       Establece que, si el incremento del patrimonio líquido de un año a otro es mayor que la suma de los ingresos netos declarados (Renta Gravable + Rentas Exentas + Ganancias Ocasionales, menos los impuestos pagados), **dicha diferencia no justificada se considerará renta gravable.** Por ende, aumentará directamente el impuesto a pagar.
+       
+    2. **Ajuste para justificar el incremento (Art. 237 E.T.):** 
+       Para depurar y justificar ese incremento, el contribuyente tiene derecho a sumar a su renta gravada todo aquello que fue un ingreso real capitalizado pero que no tributó por ser un beneficio legal. Esto incluye:
+       * Los Ingresos No Constitutivos de Renta (INCRNGO).
+       * Las Rentas Exentas y Deducciones (como el tope del 40% y beneficios especiales).
+       * *(Nota: En declaraciones más complejas también se sumarían las Ganancias Ocasionales netas y se restarían los impuestos del año anterior).*
+       
+    3. **Pasivos inexistentes o activos omitidos (Art. 239-1 E.T.):**
+       La inclusión de deudas falsas (para bajar el patrimonio ficticiamente) o la omisión de bienes en las declaraciones anteriores y su posterior inclusión, constituye una **renta líquida gravable de manera automática** y se suma de forma sancionatoria a la liquidación.
+    """)
 
 # --- 9. LIQUIDACIÓN DEL IMPUESTO Y ANTICIPO ---
 st.header("8. Liquidación de Impuestos y Saldo a Pagar")
