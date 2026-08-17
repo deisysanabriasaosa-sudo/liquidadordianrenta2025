@@ -179,26 +179,71 @@ else:
     st.warning("No se han ingresado valores en el patrimonio aún.")
 st.markdown("---")
 
-# --- 4. INGRESOS CÉDULA GENERAL ---
+# --- 4. MEJORA APLICADA: INGRESOS CÉDULA GENERAL CON GUÍAS ---
 st.header("3. Ingresos Cédula General (Trabajo, Capital, No Laboral)")
 tab_trabajo, tab_capital, tab_nolaboral = st.tabs(["💼 Rentas de Trabajo", "🏢 Rentas de Capital", "🏪 Rentas No Laborales"])
 
 with tab_trabajo:
+    with st.expander("💡 Guía Normativa: ¿Qué incluir en Rentas de Trabajo? (Art. 103 E.T.)"):
+        st.markdown("""
+        **Tipos de Ingreso a reportar:**
+        - Salarios, comisiones, prestaciones sociales, viáticos, gastos de representación.
+        - Honorarios y compensaciones por servicios personales (siempre que **NO** se haya subcontratado o vinculado a 2 o más trabajadores asociados a la actividad por 90 días o más en el año).
+        - Compensaciones recibidas por el trabajo cooperativo asociado.
+        - Apoyos económicos para estudios entregados por el Estado.
+        
+        **Costos Procedentes:**
+        - Por regla general, para asalariados **NO proceden** costos y gastos.
+        - Los independientes (que cobren honorarios/servicios) declarados en esta cédula, pueden restar costos procedentes **SOLO SI** deciden no tomar la Renta Exenta del 25%. (Nota: Este liquidador por defecto opta por la exención del 25% por ser generalmente más favorable).
+        """)
+        
     col_t1, col_t2 = st.columns(2)
-    with col_t1: ing_trabajo = st.number_input("Ingresos Brutos Laborales", min_value=0.0, step=1000000.0)
-    with col_t2: incrngo_trabajo = st.number_input("INCRNGO Trabajo (Salud, Pensión)", min_value=0.0, step=100000.0)
+    with col_t1: ing_trabajo = st.number_input("Ingresos Brutos Laborales / Honorarios", min_value=0.0, step=1000000.0)
+    with col_t2: incrngo_trabajo = st.number_input("INCRNGO Trabajo (Aportes a Salud y Pensión)", min_value=0.0, step=100000.0)
 
 with tab_capital:
+    with st.expander("💡 Guía Normativa: ¿Qué incluir en Rentas de Capital? (Art. 106 E.T.)"):
+        st.markdown("""
+        **Tipos de Ingreso a reportar:**
+        - Ingresos por arrendamientos de bienes muebles e inmuebles (casas, locales, maquinaria).
+        - Intereses, rendimientos financieros y operaciones de descuento.
+        - Regalías y explotación de la propiedad intelectual.
+        
+        **Costos Procedentes (Art. 107 E.T.):**
+        *Deben tener relación de causalidad, necesidad y proporcionalidad con la renta generada y estar debidamente soportados (Factura electrónica).*
+        - Impuesto predial y de vehículos (solo de los bienes que generaron el arriendo).
+        - Comisiones pagadas a inmobiliarias.
+        - Intereses pagados sobre préstamos adquiridos para comprar el bien que genera la renta.
+        - Seguros, mantenimientos y reparaciones de los bienes arrendados.
+        """)
+        
     col_c1, col_c2, col_c3 = st.columns(3)
-    with col_c1: ing_capital = st.number_input("Ingresos Brutos (Intereses, arriendos)", min_value=0.0, step=1000000.0)
-    with col_c2: incrngo_capital = st.number_input("INCRNGO Capital", min_value=0.0, step=100000.0)
-    with col_c3: costos_capital = st.number_input("Costos procedentes (Capital)", min_value=0.0, step=100000.0)
+    with col_c1: ing_capital = st.number_input("Ingresos Brutos (Intereses, arriendos, regalías)", min_value=0.0, step=1000000.0)
+    with col_c2: incrngo_capital = st.number_input("INCRNGO Capital (Salud, Pensión s/ independientes)", min_value=0.0, step=100000.0)
+    with col_c3: costos_capital = st.number_input("Costos procedentes (Capital)", min_value=0.0, step=100000.0, help="Predial, comisiones, mantenimientos.")
 
 with tab_nolaboral:
+    with st.expander("💡 Guía Normativa: ¿Qué incluir en Rentas No Laborales? (Art. 107 y ss E.T.)"):
+        st.markdown("""
+        **Tipos de Ingreso a reportar:**
+        - Todo ingreso que no se clasifique expresamente en las otras cédulas (Ej. comercio, industria).
+        - Venta de bienes (inmuebles, vehículos, inventarios) poseídos por **menos de 2 años** (ya que si tienen más de 2 años van a Ganancia Ocasional).
+        - Honorarios percibidos por personas que contrataron o vincularon a 2 o más trabajadores por 90 días continuos o discontinuos en el año.
+        
+        **Costos Procedentes (Art. 107 E.T.):**
+        *Deben estar soportados preferiblemente con factura electrónica o documento equivalente.*
+        - Costo de la mercancía vendida o de materias primas.
+        - Arrendamiento del local comercial u oficina.
+        - Nómina, salarios y prestaciones sociales de empleados.
+        - Servicios públicos del establecimiento.
+        - Impuestos asumidos como costo (Ej. ICA - Impuesto de Industria y Comercio).
+        - Depreciaciones de activos fijos usados en el negocio.
+        """)
+        
     col_nl1, col_nl2, col_nl3 = st.columns(3)
-    with col_nl1: ing_nolaboral = st.number_input("Ingresos Brutos (Comercio, etc)", min_value=0.0, step=1000000.0)
-    with col_nl2: incrngo_nolaboral = st.number_input("INCRNGO No Laboral", min_value=0.0, step=100000.0)
-    with col_nl3: costos_nolaboral = st.number_input("Costos procedentes (No Laboral)", min_value=0.0, step=100000.0)
+    with col_nl1: ing_nolaboral = st.number_input("Ingresos Brutos (Comercio, ventas < 2 años, etc)", min_value=0.0, step=1000000.0)
+    with col_nl2: incrngo_nolaboral = st.number_input("INCRNGO No Laboral (Aportes seguridad social)", min_value=0.0, step=100000.0)
+    with col_nl3: costos_nolaboral = st.number_input("Costos procedentes (No Laboral)", min_value=0.0, step=100000.0, help="Costo de mercancía, arrendamientos, nómina.")
 
 # Consolidación Ingresos
 ingresos_brutos = ing_trabajo + ing_capital + ing_nolaboral
@@ -272,7 +317,7 @@ total_deducciones_limitadas = ded_vivienda + ded_medicina + ded_dep_tradicional 
 
 st.markdown("---")
 
-# --- 6. MEJORA: RENTAS EXENTAS COMPLETAS Y TOPETEADAS ---
+# --- 6. RENTAS EXENTAS COMPLETAS Y TOPETEADAS ---
 st.header("5. Rentas Exentas (Con topes legales en COP)")
 col_re1, col_re2 = st.columns(2)
 
@@ -304,7 +349,7 @@ with col_re2:
 
 st.markdown("---")
 
-# --- 7. MEJORA: PANEL EXPLÍCITO CÁLCULO DEL 25% Y 40% ---
+# --- 7. PANEL EXPLÍCITO CÁLCULO DEL 25% Y 40% ---
 st.header("6. Liquidación Cédula General y Límites (25% y 40%)")
 
 # ================= PASO 1: RENTA EXENTA 25% =================
@@ -406,7 +451,7 @@ else:
 
 st.markdown("---")
 
-# --- 9. MEJORA APLICADA: LIQUIDACIÓN DEL IMPUESTO Y ANÁLISIS DETALLADO DEL ANTICIPO ---
+# --- 9. LIQUIDACIÓN DEL IMPUESTO Y ANÁLISIS DETALLADO DEL ANTICIPO ---
 st.header("8. Liquidación de Impuestos y Saldo a Pagar")
 base_uvt = renta_liquida_definitiva / UVT_2025
 impuesto_uvt = calcular_impuesto_241(base_uvt)
