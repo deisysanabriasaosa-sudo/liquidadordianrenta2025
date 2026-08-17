@@ -59,6 +59,7 @@ with col_c:
 # --- 3. LIQUIDACIÓN DE PATRIMONIO (Tabla Interactiva) ---
 st.header("2. Liquidación de Patrimonio (Bienes y Deudas)")
 st.caption("Relaciona tus activos y pasivos a 31 de diciembre de 2025. El sistema calculará tu Patrimonio Líquido y lo enviará al módulo de comparación patrimonial.")
+
 st.markdown("---")
 
 # Fila 1: Efectivo
@@ -67,7 +68,7 @@ c1.write("**1. Efectivo y saldos en cuentas bancarias**")
 val_efectivo = c2.number_input("Efectivo", min_value=0.0, step=1000000.0, label_visibility="collapsed")
 c3.caption("Art. 268 E.T.: Valor exacto del saldo a 31 de diciembre.")
 
-# Fila 2: Inversiones y CDTs
+# Fila 2: Inversiones y CDTs (Hasta 15 registros)
 st.markdown("**2. Inversiones, acciones y aportes (CDTs)**")
 with st.expander("Desplegar detalle de CDTs e Inversiones (hasta 15 registros)"):
     st.caption("Identifica cada inversión o CDT y registra su valor a declarar a 31 de diciembre.")
@@ -191,7 +192,9 @@ with tab_trabajo:
         st.markdown("""
         **Tipos de Ingreso a reportar:**
         - Salarios, comisiones, prestaciones sociales, viáticos, gastos de representación.
-        - Honorarios y compensaciones por servicios personales.
+        - Honorarios y compensaciones por servicios personales (siempre que **NO** se haya subcontratado o vinculado a 2 o más trabajadores asociados a la actividad por 90 días o más en el año).
+        - Compensaciones recibidas por el trabajo cooperativo asociado.
+        - Apoyos económicos para estudios entregados por el Estado.
         """)
         
     col_t1, col_t2 = st.columns(2)
@@ -200,31 +203,36 @@ with tab_trabajo:
     
     costos_trabajo = 0.0
     if es_independiente:
+        st.info("💡 Modo Independiente Activo en Trabajo: Puedes registrar tus costos y gastos procedentes (Art. 107 E.T.) debidamente soportados. El sistema evaluará si te conviene más tomar estos costos o la Renta Exenta del 25%.")
         costos_trabajo = st.number_input("Costos y Gastos Procedentes (Rentas de Trabajo)", min_value=0.0, step=100000.0, key="cost_t_indep")
 
 with tab_capital:
     with st.expander("💡 Guía Normativa: ¿Qué incluir en Rentas de Capital? (Art. 106 E.T.)"):
         st.markdown("""
         **Tipos de Ingreso a reportar:**
-        - Arrendamientos, intereses, rendimientos financieros y regalías.
+        - Ingresos por arrendamientos de bienes muebles e inmuebles (casas, locales, maquinaria).
+        - Intereses, rendimientos financieros y operaciones de descuento.
+        - Regalías y explotación de la propiedad intelectual.
         """)
         
     col_c1, col_c2, col_c3 = st.columns(3)
     with col_c1: ing_capital = st.number_input("Ingresos Brutos (Intereses, arriendos, regalías)", min_value=0.0, step=1000000.0)
     with col_c2: incrngo_capital = st.number_input("INCRNGO Capital (Salud, Pensión s/ independientes)", min_value=0.0, step=100000.0)
-    with col_c3: costos_capital = st.number_input("Costos procedentes (Capital)", min_value=0.0, step=100000.0)
+    with col_c3: costos_capital = st.number_input("Costos procedentes (Capital)", min_value=0.0, step=100000.0, help="Predial, comisiones, mantenimientos.")
 
 with tab_nolaboral:
     with st.expander("💡 Guía Normativa: ¿Qué incluir en Rentas No Laborales? (Art. 107 y ss E.T.)"):
         st.markdown("""
         **Tipos de Ingreso a reportar:**
-        - Comercio, ventas < 2 años.
+        - Todo ingreso que no se clasifique expresamente en las otras cédulas (Ej. comercio, industria).
+        - Venta de bienes (inmuebles, vehículos, inventarios) poseídos por **menos de 2 años**.
+        - Honorarios percibidos por personas que contrataron o vincularon a 2 o más trabajadores por 90 días.
         """)
         
     col_nl1, col_nl2, col_nl3 = st.columns(3)
     with col_nl1: ing_nolaboral = st.number_input("Ingresos Brutos (Comercio, ventas < 2 años, etc)", min_value=0.0, step=1000000.0)
     with col_nl2: incrngo_nolaboral = st.number_input("INCRNGO No Laboral (Aportes seguridad social)", min_value=0.0, step=100000.0)
-    with col_nl3: costos_nolaboral = st.number_input("Costos procedentes (No Laboral)", min_value=0.0, step=100000.0)
+    with col_nl3: costos_nolaboral = st.number_input("Costos procedentes (No Laboral)", min_value=0.0, step=100000.0, help="Costo de mercancía, arrendamientos, nómina.")
 
 # Consolidación Ingresos y Costos
 ingresos_brutos = ing_trabajo + ing_capital + ing_nolaboral
@@ -240,19 +248,24 @@ st.markdown("---")
 
 # --- 5. DEDUCCIONES IMPUTABLES COMPLETAS Y TOPETEADAS ---
 st.header("4. Deducciones Imputables (Con topes legales en COP)")
+st.caption("Ingresa los valores reales que pagaste. El liquidador automáticamente topará el valor al máximo legal permitido.")
+
 col_d1, col_d2 = st.columns(2)
 
 with col_d1:
-    val_vivienda = st.number_input(f"Intereses Crédito Vivienda (Máx Legal :red[${TOPE_VIVIENDA:,.0f}])", min_value=0.0, step=100000.0)
+    val_vivienda = st.number_input(f"Intereses Crédito Vivienda (Máx Legal :red[${TOPE_VIVIENDA:,.0f}])", min_value=0.0, step=100000.0, help="Art. 119 E.T.")
     ded_vivienda = min(val_vivienda, float(TOPE_VIVIENDA))
+    if val_vivienda > TOPE_VIVIENDA: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_vivienda:,.0f}]")
     
-    val_medicina = st.number_input(f"Medicina Prepagada (Máx Legal :red[${TOPE_MEDICINA:,.0f}])", min_value=0.0, step=100000.0)
+    val_medicina = st.number_input(f"Medicina Prepagada (Máx Legal :red[${TOPE_MEDICINA:,.0f}])", min_value=0.0, step=100000.0, help="Art. 387 E.T.")
     ded_medicina = min(val_medicina, float(TOPE_MEDICINA))
+    if val_medicina > TOPE_MEDICINA: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_medicina:,.0f}]")
     
-    ded_gmf = st.number_input("Deducción 50% GMF (4x1000)", min_value=0.0, step=10000.0)
+    ded_gmf = st.number_input("Deducción 50% GMF (4x1000)", min_value=0.0, step=10000.0, help="Art. 115 E.T.")
     
-    val_icetex = st.number_input(f"Intereses Préstamos ICETEX (Máx Legal :red[${TOPE_ICETEX:,.0f}])", min_value=0.0, step=100000.0)
+    val_icetex = st.number_input(f"Intereses Préstamos ICETEX (Máx Legal :red[${TOPE_ICETEX:,.0f}])", min_value=0.0, step=100000.0, help="Art. 119 E.T.")
     ded_icetex = min(val_icetex, float(TOPE_ICETEX))
+    if val_icetex > TOPE_ICETEX: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_icetex:,.0f}]")
 
 with col_d2:
     limite_10_ingresos = ingresos_brutos * 0.10
@@ -260,23 +273,29 @@ with col_d2:
     if tope_dep_tradicional_aplicable == 0:
         ded_dep_tradicional = st.number_input("Dependiente Económico 10% (Ingresa ingresos primero)", value=0.0, disabled=True)
     else:
-        val_dep_tradicional = st.number_input(f"Dependiente Económico 10% (Tope :red[${tope_dep_tradicional_aplicable:,.0f}])", min_value=0.0, step=100000.0)
+        val_dep_tradicional = st.number_input(f"Dependiente Económico 10% (Tope Máx Dinámico: :red[${tope_dep_tradicional_aplicable:,.0f}])", min_value=0.0, step=100000.0, help="Art. 387 E.T.")
         ded_dep_tradicional = min(val_dep_tradicional, float(tope_dep_tradicional_aplicable))
+        if val_dep_tradicional > tope_dep_tradicional_aplicable: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_dep_tradicional:,.0f}]")
     
     with st.expander("Dependientes Adicionales Ley 2277 (Hasta 4 dependientes)"):
-        val_dep_1 = st.number_input(f"Dependiente 1 (Máx: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
+        val_dep_1 = st.number_input(f"Dependiente Adicional 1 (Máx por dep: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
         dep_1 = min(val_dep_1, float(TOPE_1_DEP))
+        if val_dep_1 > TOPE_1_DEP: st.caption(f"Limitado a: :green[${dep_1:,.0f}]")
         
-        val_dep_2 = st.number_input(f"Dependiente 2 (Máx: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
+        val_dep_2 = st.number_input(f"Dependiente Adicional 2 (Máx por dep: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
         dep_2 = min(val_dep_2, float(TOPE_1_DEP))
+        if val_dep_2 > TOPE_1_DEP: st.caption(f"Limitado a: :green[${dep_2:,.0f}]")
         
-        val_dep_3 = st.number_input(f"Dependiente 3 (Máx: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
+        val_dep_3 = st.number_input(f"Dependiente Adicional 3 (Máx por dep: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
         dep_3 = min(val_dep_3, float(TOPE_1_DEP))
+        if val_dep_3 > TOPE_1_DEP: st.caption(f"Limitado a: :green[${dep_3:,.0f}]")
         
-        val_dep_4 = st.number_input(f"Dependiente 4 (Máx: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
+        val_dep_4 = st.number_input(f"Dependiente Adicional 4 (Máx por dep: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
         dep_4 = min(val_dep_4, float(TOPE_1_DEP))
+        if val_dep_4 > TOPE_1_DEP: st.caption(f"Limitado a: :green[${dep_4:,.0f}]")
         
         ded_dep_adicional = dep_1 + dep_2 + dep_3 + dep_4
+        st.info(f"Suma Adicionales Aplicada: ${ded_dep_adicional:,.0f}")
 
 total_deducciones_limitadas = ded_vivienda + ded_medicina + ded_dep_tradicional + ded_dep_adicional + ded_gmf + ded_icetex
 
@@ -288,67 +307,119 @@ col_re1, col_re2 = st.columns(2)
 
 with col_re1:
     tope_afc_dinamico = min(float(TOPE_AFC_PENSIONES), ingresos_brutos * 0.30)
-    val_afc_pensiones = st.number_input(f"Aportes Vol. Pensión y AFC (Máx: :red[${tope_afc_dinamico:,.0f}])", min_value=0.0, step=100000.0)
+    val_afc_pensiones = st.number_input(
+        f"Aportes Vol. Pensión y AFC (Máx Legal Dinámico :red[${tope_afc_dinamico:,.0f}])", 
+        min_value=0.0, step=100000.0,
+        help="Art. 126-1 y 126-4 E.T. Límite 30% del ingreso y tope de 3800 UVT."
+    )
     re_afc_pensiones_aplicable = min(val_afc_pensiones, tope_afc_dinamico)
+    if val_afc_pensiones > tope_afc_dinamico: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${re_afc_pensiones_aplicable:,.0f}]")
     
     re_indemnizaciones = st.number_input("Indemnizaciones (Seguros, enfermedad, maternidad)", min_value=0.0, step=100000.0)
 
 with col_re2:
-    re_cesantias = st.number_input("Cesantías e Intereses de Cesantías (Valor exento)", min_value=0.0, step=100000.0)
-    re_gastos_rep = st.number_input("Gastos de Representación", min_value=0.0, step=100000.0)
+    re_cesantias = st.number_input("Cesantías e Intereses de Cesantías (Valor exento depurado)", min_value=0.0, step=100000.0)
+    re_gastos_rep = st.number_input("Gastos de Representación (Magistrados, Docentes, etc.)", min_value=0.0, step=100000.0)
 
 st.markdown("---")
 
 # --- 7. PANEL DE OPTIMIZACIÓN INDEPENDIENTE Y CÁLCULO 25% / 40% ---
-st.header("6. Liquidación Cédula General y Límites")
+st.header("6. Liquidación Cédula General, Optimización Independientes y Límites")
 
 base_25_porciento = max(0, ingreso_neto_trabajo - costos_trabajo - total_deducciones_limitadas - re_afc_pensiones_aplicable - re_cesantias - re_indemnizaciones - re_gastos_rep)
 calculo_25_bruto = base_25_porciento * 0.25
 renta_exenta_25_teorica = min(calculo_25_bruto, TOPE_25_EXENTO)
 
 if es_independiente:
-    beneficio_trabajo_aplicado = max(costos_trabajo, renta_exenta_25_teorica)
+    if costos_trabajo > renta_exenta_25_teorica:
+        beneficio_trabajo_aplicado = 0.0
+        st.success(f"⚖️ **Optimización Fiscal Activa:** El sistema determinó que tus **Costos Procedentes (${costos_trabajo:,.0f})** son mayores que la Renta Exenta del 25% (${renta_exenta_25_teorica:,.0f}). Por ley, se aplicarán los **Costos** para maximizar tu beneficio.")
+    else:
+        beneficio_trabajo_aplicado = renta_exenta_25_teorica
+        st.success(f"⚖️ **Optimización Fiscal Activa:** El sistema determinó que la **Renta Exenta del 25% (${renta_exenta_25_teorica:,.0f})** es mayor que tus Costos Procedentes (${costos_trabajo:,.0f}). Por ley, se aplicará la **Renta Exenta** para maximizar tu beneficio.")
 else:
     beneficio_trabajo_aplicado = renta_exenta_25_teorica
 
+col_opt1, col_opt2, col_opt3 = st.columns(3)
+col_opt1.text_input("1. Costos de Trabajo Ingresados", value=f"${costos_trabajo:,.0f}", disabled=True)
+col_opt2.text_input("2. Renta Exenta 25% Teórica", value=f"${renta_exenta_25_teorica:,.0f}", disabled=True)
+col_opt3.text_input("3. Beneficio Laboral Seleccionado por Ley", value=f"${max(costos_trabajo, renta_exenta_25_teorica):,.0f}", disabled=True)
+
+st.markdown("---")
+
 st.markdown("### 🔹 Paso 2: Aplicación del Límite Global del 40%")
+st.caption("Norma Legal: Art. 336 E.T. La sumatoria de las deducciones y rentas exentas (más el beneficio laboral elegido) no puede superar el 40% del Ingreso Neto ni 1.340 UVT.")
+
 total_beneficios_sometidos = total_deducciones_limitadas + re_afc_pensiones_aplicable + re_cesantias + re_indemnizaciones + re_gastos_rep + beneficio_trabajo_aplicado
 limite_40 = ingreso_neto * 0.40
 limite_uvt_1340 = TOPE_GLOBAL_1340
 
+col_40_1, col_40_2, col_40_3 = st.columns(3)
+col_40_1.text_input("A. Total Beneficios Solicitados", value=f"${total_beneficios_sometidos:,.0f}", disabled=True)
+col_40_2.text_input("B. Límite del 40% del Ingreso Neto", value=f"${limite_40:,.0f}", disabled=True)
+col_40_3.text_input(f"C. Límite Absoluto (1.340 UVT = :red[${limite_uvt_1340:,.0f}])", value=f"${limite_uvt_1340:,.0f}", disabled=True)
+
 limite_final_aplicable = min(limite_40, limite_uvt_1340)
 beneficios_permitidos = min(total_beneficios_sometidos, limite_final_aplicable)
+
+st.success(f"✅ **Beneficios Totales Reconocidos (El menor valor legal): ${beneficios_permitidos:,.0f}**")
 
 st.subheader("Beneficio Adicional: Factura Electrónica (1%)")
 col_fe1, col_fe2 = st.columns(2)
 with col_fe1:
-    val_compras_factura = st.number_input("Valor Total Compras con Factura Electrónica", min_value=0.0, step=100000.0)
+    val_compras_factura = st.number_input("Valor Total Compras con Factura Electrónica", min_value=0.0, step=100000.0, help="Art. 336 Num 5 E.T.")
 with col_fe2:
     calculo_1_porciento = val_compras_factura * 0.01
     ded_factura_elec = min(calculo_1_porciento, float(TOPE_FACTURA_ELEC))
+    st.text_input(f"Valor a Deducir (1% Aplicado - Máx :red[${TOPE_FACTURA_ELEC:,.0f}])", value=f"${ded_factura_elec:,.0f}", disabled=True)
+    if calculo_1_porciento > TOPE_FACTURA_ELEC: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_factura_elec:,.0f}]")
 
 renta_liquida_cedula_general = max(0, renta_liquida_antes_beneficios - beneficios_permitidos - ded_factura_elec)
+st.info(f"👉 **RENTA LÍQUIDA GRAVABLE CÉDULA GENERAL:** ${renta_liquida_cedula_general:,.0f}")
 
 st.markdown("---")
 
 # --- 8. RENTA POR COMPARACIÓN PATRIMONIAL ---
 st.header("7. Renta por Comparación Patrimonial")
+st.caption("Esta sección verifica si el incremento de tu patrimonio de un año a otro está justificado matemáticamente por los ingresos reportados.")
+
 col_pat1, col_pat2, col_pat3 = st.columns(3)
 with col_pat1:
-    patrimonio_liquido_anterior = st.number_input("[Casilla 1] Patrimonio Líquido Año 2024", min_value=0.0, step=1000000.0)
+    patrimonio_liquido_anterior = st.number_input("[Casilla 1] Patrimonio Líquido Año 2024", min_value=0.0, step=1000000.0, help="Patrimonio líquido declarado en el año inmediatamente anterior.")
 with col_pat2:
-    patrimonio_liquido_actual = st.number_input("[Casilla 2] Patrimonio Líquido Año 2025", value=float(patrimonio_liquido_calc), min_value=0.0, step=1000000.0)
+    patrimonio_liquido_actual = st.number_input(
+        "[Casilla 2] Patrimonio Líquido Año 2025", 
+        value=float(patrimonio_liquido_calc), 
+        min_value=0.0, 
+        step=1000000.0,
+        help="Calculado automáticamente desde la Tabla de Liquidación de Patrimonio (Sección 2)."
+    )
 with col_pat3:
-    pasivos_inexistentes = st.number_input("[Casilla 3] Pasivos Inexistentes / Bienes Omitidos", min_value=0.0, step=100000.0)
+    pasivos_inexistentes = st.number_input("[Casilla 3] Pasivos Inexistentes / Bienes Omitidos", min_value=0.0, step=100000.0, help="Art. 239-1 E.T. Se suman directamente a la renta líquida por comparación.")
 
 diferencia_patrimonial_bruta = max(0, patrimonio_liquido_actual - patrimonio_liquido_anterior)
 rentas_justificadas = renta_liquida_cedula_general + incrngo + beneficios_permitidos + ded_factura_elec
 renta_comparacion = max(0, diferencia_patrimonial_bruta - rentas_justificadas + pasivos_inexistentes)
 
+with st.expander("Ver Operaciones de Liquidación Patrimonial"):
+    st.code(f"""
+    A. Diferencia Patrimonial Bruta = [Casilla 2] - [Casilla 1]
+       ${patrimonio_liquido_actual:,.0f} - ${patrimonio_liquido_anterior:,.0f} = ${patrimonio_liquido_actual - patrimonio_liquido_anterior:,.0f}
+       (Base sujeta a justificar: ${diferencia_patrimonial_bruta:,.0f})
+    
+    B. Rentas Justificadas = Renta Líquida Gravable + INCRNGO + Exenciones permitidas
+       ${renta_liquida_cedula_general:,.0f} + ${incrngo:,.0f} + ${(beneficios_permitidos + ded_factura_elec):,.0f} = ${rentas_justificadas:,.0f}
+    
+    C. Renta por Comparación Patrimonial = (Base a Justificar + [Casilla 3]) - Rentas Justificadas
+       (${diferencia_patrimonial_bruta:,.0f} + ${pasivos_inexistentes:,.0f}) - ${rentas_justificadas:,.0f} = ${renta_comparacion:,.0f}
+    """, language="text")
+
 renta_liquida_definitiva = renta_liquida_cedula_general
 if renta_comparacion > 0:
-    st.error(f"¡Alerta! Renta Líquida por Comparación Patrimonial: ${renta_comparacion:,.0f}.")
+    st.error(f"¡Alerta! Tienes una Renta Líquida por Comparación Patrimonial de: ${renta_comparacion:,.0f}. Revisa tus rentas omitidas para justificar el incremento.")
     renta_liquida_definitiva += renta_comparacion
+else:
+    st.success("Variación patrimonial debidamente justificada. No se genera renta por comparación patrimonial.")
 
 st.markdown("---")
 
@@ -362,23 +433,67 @@ limite_legal_descuentos = impuesto_pesos * 0.25
 
 col_liq1, col_liq2 = st.columns(2)
 with col_liq1:
-    val_descuentos = st.number_input(f"Descuentos Tributarios (Máx: :red[${limite_legal_descuentos:,.0f}])", min_value=0.0, step=100000.0)
+    val_descuentos = st.number_input(
+        f"Descuentos Tributarios (Máx Legal: :red[${limite_legal_descuentos:,.0f}])", 
+        min_value=0.0, step=100000.0,
+        help="Donaciones, I+D+i, etc. Se restan directamente del impuesto."
+    )
     descuentos_tributarios = min(val_descuentos, limite_legal_descuentos)
+    if val_descuentos > limite_legal_descuentos: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${descuentos_tributarios:,.0f}]")
     
+    with st.expander("📚 Ver conceptos legales de Descuentos Tributarios (Art. 253 al 257 E.T.)"):
+        st.markdown("""
+        **Norma aplicable y Forma de liquidación:**
+        Los descuentos tributarios se restan directamente del impuesto de renta (no de los ingresos).
+        1. **Donaciones a ESAL (Art. 257):** 25% del valor donado.
+        2. **Impuestos pagados en el exterior (Art. 254):** Impuesto pagado en el otro país.
+        3. **Inversiones I+D+i (Art. 256):** 25% de lo invertido.
+        4. **Inversiones en medio ambiente (Art. 253):** 25% de la inversión.
+        
+        ⚠️ **Regla General del Límite (Art. 258 E.T.):** No podrá exceder el 25% del impuesto sobre la renta a cargo.
+        """)
+
     retenciones = st.number_input("Retenciones en la fuente practicadas en 2025", min_value=0.0, step=100000.0)
-    impuesto_neto_anterior = st.number_input("Impuesto neto de renta (2024)", min_value=0.0, step=100000.0)
+    impuesto_neto_anterior = st.number_input("Impuesto neto de renta del año anterior (2024)", min_value=0.0, step=100000.0)
 with col_liq2:
     anos_declarando = st.selectbox("Número de veces que ha presentado declaración", ["1 vez (25%)", "2 veces (50%)", "3 veces o más (75%)"])
-    saldo_favor_anterior = st.number_input("Saldo a favor año anterior (2024)", min_value=0.0, step=100000.0)
+    saldo_favor_anterior = st.number_input("Saldo a favor del año anterior (2024)", min_value=0.0, step=100000.0)
 
 impuesto_neto = max(0, impuesto_pesos - descuentos_tributarios)
 
+# --- MOTOR DE CÁLCULO DE ANTICIPO ---
 porcentaje_anticipo = 0.25 if "1" in anos_declarando else (0.50 if "2" in anos_declarando else 0.75)
 anticipo_metodo_1 = max(0, (impuesto_neto * porcentaje_anticipo) - retenciones)
 promedio_impuestos = (impuesto_neto + impuesto_neto_anterior) / 2
 anticipo_metodo_2 = max(0, (promedio_impuestos * porcentaje_anticipo) - retenciones)
 anticipo_final = min(anticipo_metodo_1, anticipo_metodo_2)
 saldo_total = (impuesto_neto + anticipo_final) - retenciones - saldo_favor_anterior
+
+with st.expander("Ver análisis detallado del Anticipo de Renta (Art 807 E.T.)"):
+    st.markdown(f"**Porcentaje de Anticipo Aplicable:** {porcentaje_anticipo * 100}% (Según antigüedad declarando)")
+    st.markdown("---")
+    
+    col_m1, col_m2 = st.columns(2)
+    with col_m1:
+        st.markdown("### 🔹 Procedimiento 1")
+        st.caption("Basado en el impuesto neto del año actual (2025).")
+        st.write(f"1. **Impuesto Neto Año Actual:** ${impuesto_neto:,.0f}")
+        st.write(f"2. **Anticipo Bruto (Impuesto x {porcentaje_anticipo * 100}%):** ${(impuesto_neto * porcentaje_anticipo):,.0f}")
+        st.write(f"3. **Menos Retenciones (2025):** -${retenciones:,.0f}")
+        st.info(f"**Total Procedimiento 1:** ${anticipo_metodo_1:,.0f}")
+        
+    with col_m2:
+        st.markdown("### 🔹 Procedimiento 2")
+        st.caption("Basado en el promedio del impuesto de los dos últimos años.")
+        st.write(f"1. **Impuesto Neto Año Actual (2025):** ${impuesto_neto:,.0f}")
+        st.write(f"2. **Impuesto Neto Año Anterior (2024):** ${impuesto_neto_anterior:,.0f}")
+        st.write(f"3. **Promedio:** ${promedio_impuestos:,.0f}")
+        st.write(f"4. **Anticipo Bruto (Promedio x {porcentaje_anticipo * 100}%):** ${(promedio_impuestos * porcentaje_anticipo):,.0f}")
+        st.write(f"5. **Menos Retenciones (2025):** -${retenciones:,.0f}")
+        st.info(f"**Total Procedimiento 2:** ${anticipo_metodo_2:,.0f}")
+        
+    st.markdown("---")
+    st.success(f"✅ **El sistema seleccionó automáticamente el menor valor exigido por ley: ${anticipo_final:,.0f} COP**")
 
 st.markdown("---")
 col_res1, col_res2, col_res3 = st.columns(3)
@@ -390,59 +505,131 @@ if saldo_total > 0:
 else:
     col_res3.metric(label="🟢 SALDO A FAVOR", value=f"${abs(saldo_total):,.0f}")
 
+st.caption("Nota Legal: Este liquidador es una herramienta de referencia basada en la normativa vigente. Se recomienda validación profesional final.")
+
 st.markdown("---")
 
-# ================= 10. GENERADOR DE INFORMES Y PDF FORMULARIO 210 =================
+# ================= 10. NUEVA SECCIÓN: GENERADOR DE INFORMES Y BORRADOR FORMULARIO 210 =================
 st.header("9. Generador de Informes y Borrador Formulario 210 (DIAN)")
 st.caption("Visualiza el informe detallado de la liquidación y el borrador oficial listo para transcribir al portal Muisca.")
 
-tab_inf1, tab_inf2 = st.tabs(["📄 Informe Detallado de Liquidación", "📋 Borrador Formulario 210 (PDF)"])
+tab_inf1, tab_inf2 = st.tabs(["📄 Informe Detallado de Liquidación", "📋 Borrador Formulario 210 (Listo para Presentar)"])
 
 with tab_inf1:
     st.subheader("Informe de Campos Editados y Resultados Fiscales - AG 2025")
-    st.write(f"**Patrimonio Líquido 2025:** ${patrimonio_liquido_calc:,.0f}")
-    st.write(f"**Ingreso Neto:** ${ingreso_neto:,.0f}")
-    st.write(f"**Renta Líquida Gravable Cédula General:** ${renta_liquida_cedula_general:,.0f}")
-    st.write(f"**Impuesto Neto a Cargo:** ${impuesto_neto:,.0f}")
+    st.markdown(f"""
+    * **Contribuyente:** {nombre}
+    * **NIT / Cédula:** {nit}
+    * **Actividad Económica (CIIU):** {actividad_economica}
+    * **Modalidad Independiente:** {'Sí (Optimización Activa)' if es_independiente else 'No'}
+    
+    ---
+    ### 1. Detalle Patrimonial
+    * **Efectivo y Bancos:** ${val_efectivo:,.0f}
+    * **Inversiones y CDTs:** ${val_inversiones:,.0f}
+    * **Cuentas por Cobrar:** ${val_cxc:,.0f}
+    * **Bienes Inmuebles:** ${val_inmuebles:,.0f}
+    * **Vehículos y Maquinaria:** ${val_vehiculos:,.0f}
+    * **Activos Biológicos:** ${val_biologicos:,.0f}
+    * **Otros Activos:** ${val_otros_activos:,.0f}
+    * **Total Patrimonio Bruto:** ${patrimonio_bruto_calc:,.0f}
+    * **Menos - Pasivos Totales:** ${val_pasivos:,.0f}
+    * **Patrimonio Líquido 2025:** ${patrimonio_liquido_calc:,.0f}
+    * **Patrimonio Líquido 2024 (Anterior):** ${patrimonio_liquido_anterior:,.0f}
+
+    ---
+    ### 2. Ingresos Cédula General
+    * **Rentas de Trabajo (Bruto):** ${ing_trabajo:,.0f} | INCRNGO: ${incrngo_trabajo:,.0f} | Costos: ${costos_trabajo:,.0f}
+    * **Rentas de Capital (Bruto):** ${ing_capital:,.0f} | INCRNGO: ${incrngo_capital:,.0f} | Costos: ${costos_capital:,.0f}
+    * **Rentas No Laborales (Bruto):** ${ing_nolaboral:,.0f} | INCRNGO: ${incrngo_nolaboral:,.0f} | Costos: ${costos_nolaboral:,.0f}
+    * **Ingresos Brutos Totales:** ${ingresos_brutos:,.0f}
+    * **Ingreso Neto Global:** ${ingreso_neto:,.0f}
+
+    ---
+    ### 3. Deducciones y Rentas Exentas Sometidas a Límite
+    * **Deducción Vivienda:** ${ded_vivienda:,.0f}
+    * **Deducción Medicina Prepagada:** ${ded_medicina:,.0f}
+    * **Deducción GMF (4x1000):** ${ded_gmf:,.0f}
+    * **Deducción ICETEX:** ${ded_icetex:,.0f}
+    * **Dependientes (Tradicional + Adicionales):** ${(ded_dep_tradicional + ded_dep_adicional):,.0f}
+    * **Total Deducciones Imputables:** ${total_deducciones_limitadas:,.0f}
+    * **Rentas Exentas (AFC, Cesantías, Indemnizaciones, etc.):** ${(re_afc_pensiones_aplicable + re_cesantias + re_indemnizaciones + re_gastos_rep):,.0f}
+    * **Renta Exenta 25% (Beneficio Laboral Aplicado):** ${beneficio_trabajo_aplicado:,.0f}
+    * **Total Deducciones y Exentas Sometidas:** ${total_beneficios_sometidos:,.0f}
+    * **Beneficios Permitidos (Tras aplicar tope 40% / 1.340 UVT):** ${beneficios_permitidos:,.0f}
+    * **Deducción Factura Electrónica (1%):** ${ded_factura_elec:,.0f}
+
+    ---
+    ### 4. Control de Renta y Liquidación Final
+    * **Renta Líquida Gravable Cédula General:** ${renta_liquida_cedula_general:,.0f}
+    * **Renta por Comparación Patrimonial:** ${renta_comparacion:,.0f}
+    * **Renta Líquida Gravable Definitiva:** ${renta_liquida_definitiva:,.0f}
+    * **Base en UVT:** {base_uvt:,.2f} UVT
+    * **Impuesto Neto a Cargo:** ${impuesto_neto:,.0f}
+    * **Descuentos Tributarios:** ${descuentos_tributarios:,.0f}
+    * **Retenciones Practicadas:** ${retenciones:,.0f}
+    * **Saldo a Favor Anterior:** ${saldo_favor_anterior:,.0f}
+    * **Anticipo Año Siguiente:** ${anticipo_final:,.0f}
+    """)
+    if saldo_total > 0:
+        st.error(f"**SALDO TOTAL A PAGAR:** ${saldo_total:,.0f} COP")
+    else:
+        st.success(f"**SALDO TOTAL A FAVOR:** ${abs(saldo_total):,.0f} COP")
 
 with tab_inf2:
     st.subheader("Borrador Oficial - Formulario 210 (Personas Naturales Residentes)")
-    st.caption("Verifica los datos y descarga el PDF para usarlo de guía en tu declaración de la DIAN.")
+    st.caption("Verifica los datos exactos referenciados por casillas de la DIAN y descarga tu borrador oficial en PDF.")
     
-    # Datos exactos del Formulario 210
+    total_rentas_exentas_trab = re_afc_pensiones_aplicable + re_cesantias + re_indemnizaciones + re_gastos_rep + beneficio_trabajo_aplicado
+    otras_deduc_trab = ded_medicina + ded_gmf + ded_icetex + ded_dep_tradicional + ded_dep_adicional
+
+    # Datos exactos del Formulario 210 mapeados
     datos_f210 = [
-        ["DATOS INICIALES", "28. Compras con factura electrónica (1%)", f"${ded_factura_elec:,.0f}"],
+        ["DATOS INICIALES", "28. Uno por ciento (1%) de compras con factura electrónica", f"${ded_factura_elec:,.0f}"],
         ["PATRIMONIO", "30. Deudas / Pasivos", f"${val_pasivos:,.0f}"],
         ["PATRIMONIO", "31. Total patrimonio bruto", f"${patrimonio_bruto_calc:,.0f}"],
         ["PATRIMONIO", "32. Total patrimonio líquido", f"${patrimonio_liquido_calc:,.0f}"],
-        ["CÉDULA GENERAL", "33. Ingresos brutos rentas de trabajo", f"${ing_trabajo:,.0f}"],
-        ["CÉDULA GENERAL", "35. Ingresos no constitutivos de renta", f"${incrngo_trabajo:,.0f}"],
-        ["CÉDULA GENERAL", "36. Costos y deducciones procedentes", f"${costos_trabajo:,.0f}"],
-        ["CÉDULA GENERAL", "40. Total rentas exentas (Trabajo)", f"${(re_afc_pensiones_aplicable + re_cesantias + re_indemnizaciones + re_gastos_rep + beneficio_trabajo_aplicado):,.0f}"],
-        ["CÉDULA GENERAL", "53. Total deducciones imputables", f"${total_deducciones_limitadas:,.0f}"],
-        ["CÉDULA GENERAL", "54. Rentas exentas y/o deduc. limitadas", f"${beneficios_permitidos:,.0f}"],
-        ["RENTA GRAVABLE", "91. Renta líquida ordinaria", f"${renta_liquida_antes_beneficios:,.0f}"],
-        ["RENTA GRAVABLE", "95. Renta líquida gravable", f"${renta_liquida_cedula_general:,.0f}"],
-        ["LIQUIDACIÓN", "126. Impuesto neto de renta", f"${impuesto_neto:,.0f}"],
-        ["LIQUIDACIÓN", "131. Saldo a favor año gravable anterior", f"${saldo_favor_anterior:,.0f}"],
-        ["LIQUIDACIÓN", "132. Retenciones año gravable a declarar", f"${retenciones:,.0f}"],
-        ["LIQUIDACIÓN", "133. Anticipo renta para año siguiente", f"${anticipo_final:,.0f}"],
-        ["LIQUIDACIÓN", "136. TOTAL SALDO A PAGAR", f"${max(0, saldo_total):,.0f}"],
-        ["LIQUIDACIÓN", "137. Total saldo a favor", f"${abs(min(0, saldo_total)):,.0f}"]
+        ["CÉDULA GENERAL", "33. Ingresos brutos por rentas de trabajo", f"${ing_trabajo:,.0f}"],
+        ["CÉDULA GENERAL", "35. Ingresos no constitutivos de renta (Trabajo)", f"${incrngo_trabajo:,.0f}"],
+        ["CÉDULA GENERAL", "36. Costos y deducciones procedentes (Trabajo)", f"${costos_trabajo:,.0f}"],
+        ["CÉDULA GENERAL", "38. Aportes voluntarios y AFC (Trabajo)", f"${re_afc_pensiones_aplicable:,.0f}"],
+        ["CÉDULA GENERAL", "39. Otras rentas exentas (Trabajo)", f"${(re_cesantias + re_indemnizaciones + re_gastos_rep + beneficio_trabajo_aplicado):,.0f}"],
+        ["CÉDULA GENERAL", "40. Total rentas exentas (Trabajo)", f"${total_rentas_exentas_trab:,.0f}"],
+        ["CÉDULA GENERAL", "41. Intereses de vivienda (Trabajo)", f"${ded_vivienda:,.0f}"],
+        ["CÉDULA GENERAL", "42. Otras deducciones imputables (Trabajo)", f"${otras_deduc_trab:,.0f}"],
+        ["CÉDULA GENERAL", "43. Ingresos brutos por rentas de capital", f"${ing_capital:,.0f}"],
+        ["CÉDULA GENERAL", "45. Ingresos no constitutivos de renta (Capital)", f"${incrngo_capital:,.0f}"],
+        ["CÉDULA GENERAL", "46. Costos y deducciones procedentes (Capital)", f"${costos_capital:,.0f}"],
+        ["CÉDULA GENERAL", "53. Total deducciones imputables (Trabajo)", f"${total_deducciones_limitadas:,.0f}"],
+        ["CÉDULA GENERAL", "54. Rentas exentas y/o deduc. imputables limitadas", f"${beneficios_permitidos:,.0f}"],
+        ["CÉDULA GENERAL", "58. Ingresos brutos por rentas no laborales", f"${ing_nolaboral:,.0f}"],
+        ["CÉDULA GENERAL", "60. Ingresos no constitutivos de renta (No laborales)", f"${incrngo_nolaboral:,.0f}"],
+        ["CÉDULA GENERAL", "61. Costos y deducciones procedentes (No laborales)", f"${costos_nolaboral:,.0f}"],
+        ["RENTA GRAVABLE", "91. Renta líquida ordinaria cédula general", f"${renta_liquida_antes_beneficios:,.0f}"],
+        ["RENTA GRAVABLE", "92. Rentas exentas y deduc. imputables limitadas", f"${beneficios_permitidos:,.0f}"],
+        ["RENTA GRAVABLE", "95. Renta líquida gravable cédula general", f"${renta_liquida_cedula_general:,.0f}"],
+        ["RENTA GRAVABLE", "97. Renta líquida por comparación patrimonial", f"${renta_comparacion:,.0f}"],
+        ["RENTA GRAVABLE", "98. Renta presuntiva", f"$0"],
+        ["LIQUIDACIÓN PRIVADA", "126. Impuesto neto de renta", f"${impuesto_neto:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "129. Total impuesto a cargo", f"${impuesto_neto:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "131. Saldo a favor año gravable anterior", f"${saldo_favor_anterior:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "132. Retenciones año gravable a declarar", f"${retenciones:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "133. Anticipo renta para año gravable siguiente", f"${anticipo_final:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "134. Saldo a pagar por impuesto", f"${max(0, saldo_total):,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "136. TOTAL SALDO A PAGAR", f"${max(0, saldo_total):,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "137. Total saldo a favor", f"${abs(min(0, saldo_total)):,.0f}"],
+        ["PAGO", "980. Pago total", f"${max(0, saldo_total):,.0f}"]
     ]
     
-    # Vista previa en tabla (Opcional, para visualización rápida)
-    df_f210 = pd.DataFrame(datos_f210, columns=["Sección", "Concepto DIAN", "Valor COP"])
+    df_f210 = pd.DataFrame(datos_f210, columns=["Sección DIAN", "Casilla / Concepto Formulario 210", "Valor Liquidado (COP)"])
     st.table(df_f210)
     
     st.markdown("---")
-    st.markdown("### 📥 Descargar tu Borrador")
+    st.markdown("### 📥 Descargar tu Borrador Oficial en PDF")
     
-    # Intentar generar el PDF
     try:
         from fpdf import FPDF
         
-        # Helper para evitar errores de codificación en fuentes básicas de PDF
         def formatear_texto(texto):
             reemplazos = {'á':'a', 'é':'e', 'í':'i', 'ó':'o', 'ú':'u', 'ñ':'n', 'Á':'A', 'É':'E', 'Í':'I', 'Ó':'O', 'Ú':'U', 'Ñ':'N'}
             for busqueda, reemplazo in reemplazos.items():
@@ -458,33 +645,29 @@ with tab_inf2:
         pdf.cell(0, 10, txt=formatear_texto(f"Contribuyente: {nombre} | NIT: {nit}"), ln=True, align='C')
         pdf.ln(5)
         
-        # Encabezado tabla PDF
         pdf.set_font("Arial", 'B', 9)
         pdf.cell(45, 8, "SECCION", 1, 0, 'C')
         pdf.cell(100, 8, "CONCEPTO / CASILLA", 1, 0, 'C')
         pdf.cell(45, 8, "VALOR", 1, 1, 'C')
         
-        # Contenido tabla PDF
         pdf.set_font("Arial", '', 8)
         for fila in datos_f210:
             pdf.cell(45, 8, formatear_texto(fila[0]), 1, 0, 'L')
             pdf.cell(100, 8, formatear_texto(fila[1]), 1, 0, 'L')
             pdf.cell(45, 8, formatear_texto(fila[2]), 1, 1, 'R')
             
-        # Generar archivo temporal para descargar
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             pdf.output(tmp.name)
             with open(tmp.name, "rb") as f:
                 pdf_bytes = f.read()
                 
-        # Botón de Descarga Streamlit
         st.download_button(
-            label="📄 Descargar Formulario 210 (PDF)",
+            label="📄 Generar y Descargar PDF (Formulario 210)",
             data=pdf_bytes,
-            file_name=f"Borrador_Formulario_210_{nit}.pdf",
+            file_name=f"Borrador_Form_210_{nit}.pdf",
             mime="application/pdf",
             type="primary"
         )
         
     except ImportError:
-        st.error("⚠️ Falta la librería **fpdf** para generar el documento. Instálala ejecutando en tu terminal: `pip install fpdf`")
+        st.error("⚠️ Para habilitar la descarga en PDF, necesitas instalar la librería **fpdf**. Abre la terminal y ejecuta: `pip install fpdf` (o agrégalo a tu requirements.txt si estás en la nube).")
