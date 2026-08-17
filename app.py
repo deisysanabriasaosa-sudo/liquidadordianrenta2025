@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 # --- 1. CONSTANTES TRIBUTARIAS AG 2025 ---
 UVT_2025 = 49799
@@ -65,7 +66,7 @@ c1.write("**1. Efectivo y saldos en cuentas bancarias**")
 val_efectivo = c2.number_input("Efectivo", min_value=0.0, step=1000000.0, label_visibility="collapsed")
 c3.caption("Art. 268 E.T.: Valor exacto del saldo a 31 de diciembre.")
 
-# --- MEJORA: Fila 2 (Inversiones y CDTs) ---
+# Fila 2: Inversiones y CDTs
 st.markdown("**2. Inversiones, acciones y aportes (CDTs)**")
 with st.expander("Desplegar detalle de CDTs e Inversiones (hasta 5)"):
     col_cdt1, col_cdt2 = st.columns(2)
@@ -85,24 +86,43 @@ c1.write("**3. Cuentas por cobrar (Préstamos a terceros)**")
 val_cxc = c2.number_input("CxC", min_value=0.0, step=1000000.0, label_visibility="collapsed")
 c3.caption("Art. 270 E.T.: Valor nominal del crédito o deuda a tu favor.")
 
-# --- MEJORA: Fila 4 (Inmuebles y actualización patrimonial) ---
+# --- MEJORA APLICADA: Fila 4 (Inmuebles y actualización patrimonial) ---
 st.markdown("**4. Bienes Inmuebles (Casas, apartamentos, fincas)**")
 with st.expander("Desplegar detalle de Bienes Inmuebles (hasta 5 propiedades)"):
-    st.caption("Nota: Ingresa el valor del año anterior y el % de reajuste (Art. 70 E.T.) para que el activo sufra la actualización legal, o bien ingresa el avalúo catastral. El sistema liquida automáticamente el mayor valor (Art. 277 E.T.).")
+    st.caption("Nota: Identifica el inmueble, ingresa su soporte y valores correspondientes. El sistema liquida automáticamente el mayor valor a declarar (Art. 277 E.T.).")
     val_inmuebles = 0.0
+    detalle_inmuebles_editados = [] # Lista para guardar los inmuebles que realmente se diligencien
+    
     for i in range(1, 6):
-        st.markdown(f"**Inmueble {i}**")
+        st.markdown(f"**🔹 Inmueble {i}**")
+        
+        # Casillas de Identificación y Soporte
+        c_ident1, c_ident2 = st.columns(2)
+        nom_inm = c_ident1.text_input(f"Nombre o Identificación (Inmueble {i})", key=f"inm_nom_{i}", placeholder="Ej: Apto 101, Finca El Recuerdo...")
+        soporte_inm = c_ident2.text_input(f"Soporte Documental (Inmueble {i})", key=f"inm_soporte_{i}", placeholder="Ej: Escritura Pública 123, Declaración 2024...")
+        
+        # Casillas de Valores
         c_inm1, c_inm2, c_inm3, c_inm4 = st.columns(4)
-        val_ant = c_inm1.number_input(f"[Casilla {i}.1] Valor declarado año anterior", min_value=0.0, step=1000000.0, key=f"inm_ant_{i}")
-        reajuste = c_inm2.number_input(f"[Casilla {i}.2] % Reajuste fiscal", min_value=0.0, step=0.01, value=0.0, key=f"inm_reajuste_{i}", help="Porcentaje de ajuste fiscal fijado por el Gobierno Nacional para el año gravable.")
-        val_catastral = c_inm3.number_input(f"[Casilla {i}.3] Avalúo Catastral 2025", min_value=0.0, step=1000000.0, key=f"inm_cat_{i}")
+        val_ant = c_inm1.number_input(f"Valor declarado año anterior", min_value=0.0, step=1000000.0, key=f"inm_ant_{i}")
+        reajuste = c_inm2.number_input(f"% Reajuste fiscal", min_value=0.0, step=0.01, value=0.0, key=f"inm_reajuste_{i}", help="Porcentaje de ajuste fiscal fijado por el Gobierno.")
+        val_catastral = c_inm3.number_input(f"Avalúo Catastral 2025", min_value=0.0, step=1000000.0, key=f"inm_cat_{i}")
         
         # Fórmula de liquidación automática
         val_ajustado = val_ant * (1 + (reajuste / 100))
         val_declarar = max(val_ajustado, val_catastral)
         
-        c_inm4.text_input(f"[Casilla {i}.4] Valor fiscal a declarar", value=f"${val_declarar:,.0f}", disabled=True, key=f"inm_dec_{i}")
-        val_inmuebles += val_declarar
+        c_inm4.text_input(f"Valor fiscal a declarar (2025)", value=f"${val_declarar:,.0f}", disabled=True, key=f"inm_dec_{i}")
+        
+        if val_declarar > 0:
+            val_inmuebles += val_declarar
+            detalle_inmuebles_editados.append({
+                "Inmueble": nom_inm if nom_inm else f"Inmueble {i}",
+                "Soporte": soporte_inm if soporte_inm else "Sin soporte referenciado",
+                "Valor 2025": val_declarar
+            })
+            
+        st.write("---")
+        
     st.info(f"Total Inmuebles a declarar: ${val_inmuebles:,.0f}")
 
 # --- APÉNDICE DE RECOMENDACIÓN INMUEBLES ---
@@ -119,10 +139,10 @@ with st.expander("💡 Apéndice de Consulta Legal: Recomendaciones sobre Avalú
     Cuando dista significativamente el avalúo catastral del **valor comercial o posible valor de venta**, se recomienda ir actualizando el costo fiscal del inmueble en cada declaración. Para ello, utiliza la casilla del porcentaje de reajuste para que el activo "sufra" la actualización sobre el mismo valor del año anterior, o bien aplica los múltiplos del Art. 73 E.T.
     
     **Repercusiones Futuras (Impuesto de Ganancia Ocasional):**
-    Si decides vender el inmueble y mantienes registrado únicamente el avalúo catastral (que en Colombia suele ser muy inferior a los precios del mercado real), al momento de la venta la utilidad generada (Precio de Venta - Costo Fiscal) será gigantesca. Esto te obligará a pagar un **Impuesto de Ganancia Ocasional del 15%** sobre una base muy alta. Al actualizar paulatinamente el costo fiscal mediante los reajustes de ley (registrando el mismo valor del año anterior y sumándole el ajuste porcentual), incrementas de forma legal el valor fiscal del inmueble, reduciendo de manera radical el impacto tributario futuro al momento de realizar la venta.
+    Si decides vender el inmueble y mantienes registrado únicamente el avalúo catastral (que en Colombia suele ser muy inferior a los precios del mercado real), al momento de la venta la utilidad generada (Precio de Venta - Costo Fiscal) será gigantesca. Esto te obligará a pagar un **Impuesto de Ganancia Ocasional del 15%** sobre una base muy alta. Al actualizar paulatinamente el costo fiscal mediante los reajustes de ley, incrementas de forma legal el valor fiscal del inmueble, reduciendo de manera radical el impacto tributario futuro.
     """)
 
-# --- MEJORA: Fila 5 (Vehículos) ---
+# Fila 5: Vehículos
 st.markdown("**5. Vehículos y maquinaria**")
 with st.expander("Desplegar detalle de Vehículos (hasta 2 vehículos)"):
     col_veh1, col_veh2 = st.columns(2)
@@ -158,6 +178,43 @@ patrimonio_bruto_calc = val_efectivo + val_inversiones + val_cxc + val_inmuebles
 patrimonio_liquido_calc = max(0, patrimonio_bruto_calc - val_pasivos)
 
 st.success(f"**Total Patrimonio Bruto:** ${patrimonio_bruto_calc:,.0f} | **Total Patrimonio Líquido Calculado:** ${patrimonio_liquido_calc:,.0f}")
+
+# --- MEJORA APLICADA: RESUMEN DE PATRIMONIO A 2025 (Solo editados) ---
+st.markdown("### 📊 Resumen de Valores a Declarar en Patrimonio (2025)")
+st.caption("A continuación se presenta un resumen consolidado exclusivamente de los rubros que contienen valores y que componen tu patrimonio final.")
+
+# Construcción de la tabla de resumen dinámica
+resumen_data = []
+
+if val_efectivo > 0: resumen_data.append(["1. Efectivo y Bancos", "Saldos bancarios y efectivo", f"${val_efectivo:,.0f}"])
+if val_inversiones > 0: resumen_data.append(["2. Inversiones y CDTs", "Acciones, aportes y CDTs", f"${val_inversiones:,.0f}"])
+if val_cxc > 0: resumen_data.append(["3. Cuentas por Cobrar", "Préstamos realizados a terceros", f"${val_cxc:,.0f}"])
+
+# Desglose de Inmuebles si existen
+if val_inmuebles > 0:
+    for inm in detalle_inmuebles_editados:
+        resumen_data.append([f"4. Inmueble: {inm['Inmueble']}", f"Soporte: {inm['Soporte']}", f"${inm['Valor 2025']:,.0f}"])
+
+if val_vehiculos > 0: resumen_data.append(["5. Vehículos", "Vehículos y Maquinaria", f"${val_vehiculos:,.0f}"])
+if val_biologicos > 0: resumen_data.append(["6. Activos Biológicos", "Semovientes y cultivos", f"${val_biologicos:,.0f}"])
+if val_otros_activos > 0: resumen_data.append(["7. Otros Activos", "Muebles, enseres, joyas", f"${val_otros_activos:,.0f}"])
+
+# Si hay datos para mostrar, creamos un DataFrame y lo mostramos elegantemente
+if resumen_data:
+    df_resumen = pd.DataFrame(resumen_data, columns=["Concepto Patrimonial", "Detalle / Soporte", "Valor a Declarar 2025"])
+    st.table(df_resumen)
+    
+    col_tot1, col_tot2 = st.columns(2)
+    col_tot1.info(f"**SUMA PATRIMONIO BRUTO:** ${patrimonio_bruto_calc:,.0f}")
+    if val_pasivos > 0:
+        col_tot2.warning(f"**MENOS PASIVOS DECLARADOS:** -${val_pasivos:,.0f}")
+    
+    st.success(f"**PATRIMONIO LÍQUIDO FINAL 2025:** ${patrimonio_liquido_calc:,.0f}")
+else:
+    st.warning("No se han ingresado valores en el patrimonio aún.")
+
+st.markdown("---")
+
 
 # --- 4. INGRESOS CÉDULA GENERAL (Depuración por naturaleza) ---
 st.header("3. Ingresos Cédula General (Trabajo, Capital, No Laboral)")
