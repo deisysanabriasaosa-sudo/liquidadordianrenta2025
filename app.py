@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import base64
+from io import BytesIO
 
 # --- 1. CONSTANTES TRIBUTARIAS AG 2025 ---
 UVT_2025 = 49799
@@ -475,7 +477,7 @@ with st.expander("Ver análisis detallado del Anticipo de Renta (Art 807 E.T.)")
     col_m1, col_m2 = st.columns(2)
     with col_m1:
         st.markdown("### 🔹 Procedimiento 1")
-        st.caption("Basado en el impuesto neto del año actual (2025).")
+        st.caption("Basado en el impuesto neto del year actual (2025).")
         st.write(f"1. **Impuesto Neto Año Actual:** ${impuesto_neto:,.0f}")
         st.write(f"2. **Anticipo Bruto (Impuesto x {porcentaje_anticipo * 100}%):** ${(impuesto_neto * porcentaje_anticipo):,.0f}")
         st.write(f"3. **Menos Retenciones (2025):** -${retenciones:,.0f}")
@@ -508,9 +510,9 @@ st.caption("Nota Legal: Este liquidador es una herramienta de referencia basada 
 
 st.markdown("---")
 
-# ================= 10. NUEVA SECCIÓN: GENERADOR DE INFORMES Y BORRADOR FORMULARIO 210 =================
+# ================= 10. GENERADOR DE INFORMES Y BORRADOR FORMULARIO 210 =================
 st.header("9. Generador de Informes y Borrador Formulario 210 (DIAN)")
-st.caption("Visualiza el informe detallado de la liquidación y el borrador oficial listo para transcribir al portal Muisca.")
+st.caption("Visualiza el informe detallado de la liquidación, el borrador oficial y descarga los documentos directos en PDF.")
 
 tab_inf1, tab_inf2 = st.tabs(["📄 Informe Detallado de Liquidación", "📋 Borrador Formulario 210 (Listo para Presentar)"])
 
@@ -557,11 +559,77 @@ with tab_inf1:
     else:
         st.success(f"**SALDO TOTAL A FAVOR:** ${abs(saldo_total):,.0f} COP")
 
+    # --- FUNCIÓN DE DESCARGA PDF INFORME ---
+    def generar_pdf_informe():
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor('#1B365D'), alignment=1)
+        subtitle_style = ParagraphStyle('SubTitleStyle', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#555555'), alignment=1)
+        h2_style = ParagraphStyle('H2Style', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#1B365D'), spaceBefore=10, spaceAfter=5)
+        normal_style = ParagraphStyle('NormalStyle', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#333333'))
+
+        elements.append(Paragraph("INFORME DETALLADO DE LIQUIDACIÓN DE RENTA - AG 2025", title_style))
+        elements.append(Paragraph(f"Contribuyente: {nombre} | NIT/CC: {nit}", subtitle_style))
+        elements.append(Spacer(1, 15))
+
+        data = [
+            ["Concepto Fiscal", "Valor (COP)"],
+            ["Patrimonio Bruto Total", f"${patrimonio_bruto_calc:,.0f}"],
+            ["Pasivos Totales", f"${val_pasivos:,.0f}"],
+            ["Patrimonio Líquido 2025", f"${patrimonio_liquido_calc:,.0f}"],
+            ["Ingresos Brutos Cédula General", f"${ingresos_brutos:,.0f}"],
+            ["INCRNGO Total", f"${incrngo:,.0f}"],
+            ["Costos y Gastos Procedentes", f"${costos_procedentes_totales:,.0f}"],
+            ["Beneficios Permitidos (Tope 40%)", f"${beneficios_permitidos:,.0f}"],
+            ["Deducción Factura Electrónica (1%)", f"${ded_factura_elec:,.0f}"],
+            ["Renta Líquida Gravable Cédula General", f"${renta_liquida_cedula_general:,.0f}"],
+            ["Renta por Comparación Patrimonial", f"${renta_comparacion:,.0f}"],
+            ["Renta Líquida Gravable Definitiva", f"${renta_liquida_definitiva:,.0f}"],
+            ["Impuesto Neto a Cargo", f"${impuesto_neto:,.0f}"],
+            ["Anticipo Impuesto Año Siguiente", f"${anticipo_final:,.0f}"],
+            ["Retenciones y Saldo a Favor Anterior", f"${retenciones + saldo_favor_anterior:,.0f}"],
+            ["SALDO TOTAL A PAGAR / (FAVOR)", f"${saldo_total:,.0f}"]
+        ]
+
+        t = Table(data, colWidths=[300, 200])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (1,0), colors.HexColor('#1B365D')),
+            ('TEXTCOLOR', (0,0), (1,0), colors.white),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,-1), 9),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ('TOPPADDING', (0,0), (-1,-1), 5),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CCCCCC')),
+            ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#F2F5F8')),
+            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ]))
+
+        elements.append(t)
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer
+
+    pdf_informe_buffer = generar_pdf_informe()
+    st.download_button(
+        label="📥 Descargar Informe Detallado en PDF",
+        data=pdf_informe_buffer,
+        file_name=f"Informe_Liquidacion_Renta_2025_{nit}.pdf",
+        mime="application/pdf"
+    )
+
 with tab_inf2:
     st.subheader("Borrador Oficial - Formulario 210 (Personas Naturales Residentes)")
     st.caption("Usa esta estructura organizada por secciones para diligenciar de manera rápida y segura tu declaración en el servicio informático electrónico de la DIAN.")
     
-    # Tabla simulada del Formulario 210
     datos_f210 = [
         ["PATRIMONIO", "Total patrimonio bruto", f"${patrimonio_bruto_calc:,.0f}"],
         ["PATRIMONIO", "Deudas / Pasivos", f"${val_pasivos:,.0f}"],
@@ -587,5 +655,56 @@ with tab_inf2:
     
     df_f210 = pd.DataFrame(datos_f210, columns=["Sección DIAN", "Concepto / Casilla Formulario 210", "Valor Liquidado (COP)"])
     st.table(df_f210)
-    
+
+    # --- FUNCIÓN DE DESCARGA PDF FORMULARIO 210 ---
+    def generar_pdf_f210():
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=15, textColor=colors.HexColor('#004A99'), alignment=1)
+        subtitle_style = ParagraphStyle('SubTitleStyle', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#555555'), alignment=1)
+
+        elements.append(Paragraph("REPÚBLICA DE COLOMBIA - DIAN", title_style))
+        elements.append(Paragraph("FORMULARIO 210: BORRADOR DECLARACIÓN DE RENTA - AG 2025", title_style))
+        elements.append(Paragraph(f"Contribuyente: {nombre} | NIT/CC: {nit} | Actividad CIIU: {actividad_economica}", subtitle_style))
+        elements.append(Spacer(1, 15))
+
+        f210_table_data = [["Sección", "Concepto Formulario 210", "Valor (COP)"]]
+        for row in datos_f210:
+            f210_table_data.append(row)
+
+        t = Table(f210_table_data, colWidths=[120, 270, 110])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#004A99')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+            ('TOPPADDING', (0,0), (-1,-1), 4),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#DDDDDD')),
+            ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#FFF2CC')),
+            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ]))
+
+        elements.append(t)
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer
+
+    pdf_f210_buffer = generar_pdf_f210()
+    st.download_button(
+        label="📥 Descargar Borrador Formulario 210 en PDF",
+        data=pdf_f210_buffer,
+        file_name=f"Borrador_Formulario_210_{nit}.pdf",
+        mime="application/pdf"
+    )
+
     st.info("💡 **Consejo Profesional:** Verifica que cada uno de los valores aquí descritos coincida con los certificados de tus entidades financieras, fondos de pensiones, extractos y soportes de propiedades antes de firmar y presentar tu declaración en la DIAN.")
