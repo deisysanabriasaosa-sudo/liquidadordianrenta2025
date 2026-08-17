@@ -360,4 +360,185 @@ col_40_2.text_input("B. Límite del 40% del Ingreso Neto", value=f"${limite_40:,
 col_40_3.text_input(f"C. Límite Absoluto (1.340 UVT = :red[${limite_uvt_1340:,.0f}])", value=f"${limite_uvt_1340:,.0f}", disabled=True)
 
 limite_final_aplicable = min(limite_40, limite_uvt_1340)
-beneficios_permitidos = min(total_beneficios_s
+beneficios_permitidos = min(total_beneficios_sometidos, limite_final_aplicable)
+
+st.success(f"✅ **Beneficios Totales Reconocidos (El menor valor legal): ${beneficios_permitidos:,.0f}**")
+
+st.subheader("Beneficio Adicional: Factura Electrónica (1%)")
+col_fe1, col_fe2 = st.columns(2)
+with col_fe1:
+    val_compras_factura = st.number_input("Valor Total Compras con Factura Electrónica", min_value=0.0, step=100000.0, help="Art. 336 Num 5 E.T.")
+with col_fe2:
+    calculo_1_porciento = val_compras_factura * 0.01
+    ded_factura_elec = min(calculo_1_porciento, float(TOPE_FACTURA_ELEC))
+    st.text_input(f"Valor a Deducir (1% Aplicado - Máx :red[${TOPE_FACTURA_ELEC:,.0f}])", value=f"${ded_factura_elec:,.0f}", disabled=True)
+    if calculo_1_porciento > TOPE_FACTURA_ELEC: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_factura_elec:,.0f}]")
+
+renta_liquida_cedula_general = max(0, renta_liquida_antes_beneficios - beneficios_permitidos - ded_factura_elec)
+st.info(f"👉 **RENTA LÍQUIDA GRAVABLE CÉDULA GENERAL:** ${renta_liquida_cedula_general:,.0f}")
+
+st.markdown("---")
+
+# --- 8. RENTA POR COMPARACIÓN PATRIMONIAL ---
+st.header("7. Renta por Comparación Patrimonial")
+st.caption("Esta sección verifica si el incremento de tu patrimonio de un año a otro está justificado matemáticamente por los ingresos reportados.")
+
+col_pat1, col_pat2, col_pat3 = st.columns(3)
+with col_pat1:
+    patrimonio_liquido_anterior = st.number_input("[Casilla 1] Patrimonio Líquido Año 2024", min_value=0.0, step=1000000.0, help="Patrimonio líquido declarado en el año inmediatamente anterior.")
+with col_pat2:
+    patrimonio_liquido_actual = st.number_input(
+        "[Casilla 2] Patrimonio Líquido Año 2025", 
+        value=float(patrimonio_liquido_calc), 
+        min_value=0.0, 
+        step=1000000.0,
+        help="Calculado automáticamente desde la Tabla de Liquidación de Patrimonio (Sección 2)."
+    )
+with col_pat3:
+    pasivos_inexistentes = st.number_input("[Casilla 3] Pasivos Inexistentes / Bienes Omitidos", min_value=0.0, step=100000.0, help="Art. 239-1 E.T. Se suman directamente a la renta líquida por comparación.")
+
+diferencia_patrimonial_bruta = max(0, patrimonio_liquido_actual - patrimonio_liquido_anterior)
+rentas_justificadas = renta_liquida_cedula_general + incrngo + beneficios_permitidos + ded_factura_elec
+renta_comparacion = max(0, diferencia_patrimonial_bruta - rentas_justificadas + pasivos_inexistentes)
+
+with st.expander("Ver Operaciones de Liquidación Patrimonial"):
+    st.code(f"""
+    A. Diferencia Patrimonial Bruta = [Casilla 2] - [Casilla 1]
+       ${patrimonio_liquido_actual:,.0f} - ${patrimonio_liquido_anterior:,.0f} = ${patrimonio_liquido_actual - patrimonio_liquido_anterior:,.0f}
+       (Base sujeta a justificar: ${diferencia_patrimonial_bruta:,.0f})
+    
+    B. Rentas Justificadas = Renta Líquida Gravable + INCRNGO + Exenciones permitidas
+       ${renta_liquida_cedula_general:,.0f} + ${incrngo:,.0f} + ${(beneficios_permitidos + ded_factura_elec):,.0f} = ${rentas_justificadas:,.0f}
+    
+    C. Renta por Comparación Patrimonial = (Base a Justificar + [Casilla 3]) - Rentas Justificadas
+       (${diferencia_patrimonial_bruta:,.0f} + ${pasivos_inexistentes:,.0f}) - ${rentas_justificadas:,.0f} = ${renta_comparacion:,.0f}
+    """, language="text")
+
+renta_liquida_definitiva = renta_liquida_cedula_general
+if renta_comparacion > 0:
+    st.error(f"¡Alerta! Tienes una Renta Líquida por Comparación Patrimonial de: ${renta_comparacion:,.0f}. Revisa tus rentas omitidas para justificar el incremento.")
+    renta_liquida_definitiva += renta_comparacion
+else:
+    st.success("Variación patrimonial debidamente justificada. No se genera renta por comparación patrimonial.")
+
+st.markdown("---")
+
+# --- 9. LIQUIDACIÓN DEL IMPUESTO Y ANÁLISIS DETALLADO DEL ANTICIPO ---
+st.header("8. Liquidación de Impuestos y Saldo a Pagar")
+base_uvt = renta_liquida_definitiva / UVT_2025
+impuesto_uvt = calcular_impuesto_241(base_uvt)
+impuesto_pesos = impuesto_uvt * UVT_2025
+
+limite_legal_descuentos = impuesto_pesos * 0.25
+
+col_liq1, col_liq2 = st.columns(2)
+with col_liq1:
+    val_descuentos = st.number_input(
+        f"Descuentos Tributarios (Máx Legal: :red[${limite_legal_descuentos:,.0f}])", 
+        min_value=0.0, step=100000.0,
+        help="Donaciones, I+D+i, etc. Se restan directamente del impuesto."
+    )
+    descuentos_tributarios = min(val_descuentos, limite_legal_descuentos)
+    if val_descuentos > limite_legal_descuentos: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${descuentos_tributarios:,.0f}]")
+    
+    with st.expander("📚 Ver conceptos legales de Descuentos Tributarios (Art. 253 al 257 E.T.)"):
+        st.markdown("""
+        **Norma aplicable y Forma de liquidación:**
+        Los descuentos tributarios se restan directamente del impuesto de renta (no de los ingresos).
+        1. **Donaciones a ESAL (Art. 257):** 25% del valor donado.
+        2. **Impuestos pagados en el exterior (Art. 254):** Impuesto pagado en el otro país.
+        3. **Inversiones I+D+i (Art. 256):** 25% de lo invertido.
+        4. **Inversiones en medio ambiente (Art. 253):** 25% de la inversión.
+        
+        ⚠️ **Regla General del Límite (Art. 258 E.T.):** No podrá exceder el 25% del impuesto sobre la renta a cargo.
+        """)
+
+    retenciones = st.number_input("Retenciones en la fuente practicadas en 2025", min_value=0.0, step=100000.0)
+    impuesto_neto_anterior = st.number_input("Impuesto neto de renta del año anterior (2024)", min_value=0.0, step=100000.0)
+with col_liq2:
+    anos_declarando = st.selectbox("Número de veces que ha presentado declaración", ["1 vez (25%)", "2 veces (50%)", "3 veces o más (75%)"])
+    saldo_favor_anterior = st.number_input("Saldo a favor del año anterior (2024)", min_value=0.0, step=100000.0)
+
+impuesto_neto = max(0, impuesto_pesos - descuentos_tributarios)
+
+# --- MOTOR DE CÁLCULO DE ANTICIPO ---
+porcentaje_anticipo = 0.25 if "1" in anos_declarando else (0.50 if "2" in anos_declarando else 0.75)
+anticipo_metodo_1 = max(0, (impuesto_neto * porcentaje_anticipo) - retenciones)
+promedio_impuestos = (impuesto_neto + impuesto_neto_anterior) / 2
+anticipo_metodo_2 = max(0, (promedio_impuestos * porcentaje_anticipo) - retenciones)
+anticipo_final = min(anticipo_metodo_1, anticipo_metodo_2)
+saldo_total = (impuesto_neto + anticipo_final) - retenciones - saldo_favor_anterior
+
+with st.expander("Ver análisis detallado del Anticipo de Renta (Art 807 E.T.)"):
+    st.markdown(f"**Porcentaje de Anticipo Aplicable:** {porcentaje_anticipo * 100}% (Según antigüedad declarando)")
+    st.markdown("---")
+    
+    col_m1, col_m2 = st.columns(2)
+    with col_m1:
+        st.markdown("### 🔹 Procedimiento 1")
+        st.caption("Basado en el impuesto neto del año actual (2025).")
+        st.write(f"1. **Impuesto Neto Año Actual:** ${impuesto_neto:,.0f}")
+        st.write(f"2. **Anticipo Bruto (Impuesto x {porcentaje_anticipo * 100}%):** ${(impuesto_neto * porcentaje_anticipo):,.0f}")
+        st.write(f"3. **Menos Retenciones (2025):** -${retenciones:,.0f}")
+        st.info(f"**Total Procedimiento 1:** ${anticipo_metodo_1:,.0f}")
+        
+    with col_m2:
+        st.markdown("### 🔹 Procedimiento 2")
+        st.caption("Basado en el promedio del impuesto de los dos últimos años.")
+        st.write(f"1. **Impuesto Neto Año Actual (2025):** ${impuesto_neto:,.0f}")
+        st.write(f"2. **Impuesto Neto Año Anterior (2024):** ${impuesto_neto_anterior:,.0f}")
+        st.write(f"3. **Promedio:** ${promedio_impuestos:,.0f}")
+        st.write(f"4. **Anticipo Bruto (Promedio x {porcentaje_anticipo * 100}%):** ${(promedio_impuestos * porcentaje_anticipo):,.0f}")
+        st.write(f"5. **Menos Retenciones (2025):** -${retenciones:,.0f}")
+        st.info(f"**Total Procedimiento 2:** ${anticipo_metodo_2:,.0f}")
+        
+    st.markdown("---")
+    st.success(f"✅ **El sistema seleccionó automáticamente el menor valor exigido por ley: ${anticipo_final:,.0f} COP**")
+
+st.markdown("---")
+col_res1, col_res2, col_res3 = st.columns(3)
+col_res1.metric(label="IMPUESTO NETO A CARGO", value=f"${impuesto_neto:,.0f}")
+col_res2.metric(label="ANTICIPO AÑO SIGUIENTE", value=f"${anticipo_final:,.0f}")
+
+if saldo_total > 0:
+    col_res3.metric(label="🔴 SALDO A PAGAR", value=f"${saldo_total:,.0f}")
+else:
+    col_res3.metric(label="🟢 SALDO A FAVOR", value=f"${abs(saldo_total):,.0f}")
+
+st.caption("Nota Legal: Este liquidador es una herramienta de referencia basada en la normativa vigente. Se recomienda validación profesional final.")
+
+st.markdown("---")
+
+# ================= 10. GENERADOR DE INFORMES Y BORRADOR FORMULARIO 210 (DIAN) =================
+st.header("9. Generador de Informes y Borrador Formulario 210 (DIAN)")
+st.caption("Visualiza el informe detallado de la liquidación, el borrador oficial y descarga los documentos directos en formato PDF.")
+
+tab_inf1, tab_inf2 = st.tabs(["📄 Informe Detallado de Liquidación", "📋 Borrador Oficial Formulario 210"])
+
+with tab_inf1:
+    st.subheader("Informe de Campos Editados y Resultados Fiscales - AG 2025")
+    st.markdown(f"""
+    * **Contribuyente:** {nombre}
+    * **NIT / Cédula:** {nit}
+    * **Actividad Económica (CIIU):** {actividad_economica}
+    * **Modalidad Independiente:** {'Sí (Optimización Activa)' if es_independiente else 'No'}
+    
+    ---
+    ### 1. Consolidación Patrimonial
+    * **Patrimonio Bruto Total:** ${patrimonio_bruto_calc:,.0f}
+    * **Pasivos Totales:** ${val_pasivos:,.0f}
+    * **Patrimonio Líquido 2025:** ${patrimonio_liquido_calc:,.0f}
+    * **Patrimonio Líquido 2024 (Anterior):** ${patrimonio_liquido_anterior:,.0f}
+    
+    ---
+    ### 2. Ingresos y Depuración Cédula General
+    * **Ingresos Brutos Totales:** ${ingresos_brutos:,.0f}
+    * **Ingresos No Constitutivos de Renta (INCRNGO):** ${incrngo:,.0f}
+    * **Costos y Gastos Procedentes:** ${costos_procedentes_totales:,.0f}
+    * **Ingreso Neto:** ${ingreso_neto:,.0f}
+    
+    ---
+    ### 3. Beneficios Tributarios Aplicados
+    * **Total Deducciones y Exentas Sometidas:** ${total_beneficios_sometidos:,.0f}
+    * **Beneficios Permitidos (Tras aplicar tope 40% / 1.340 UVT):** ${beneficios_permitidos:,.0f}
+    * **Deducción Factura Electrónica (1%):** ${ded_factura_ele
