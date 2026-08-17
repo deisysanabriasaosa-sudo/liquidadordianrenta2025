@@ -182,7 +182,6 @@ st.markdown("---")
 # --- 4. INGRESOS CÉDULA GENERAL (Con Optimización Independientes) ---
 st.header("3. Ingresos Cédula General (Trabajo, Capital, No Laboral)")
 
-# Selector maestro de Independiente para optimización fiscal
 es_independiente = st.checkbox("👤 ¿Es usted trabajador independiente? (Activa la optimización automática entre Costos Procedentes y Renta Exenta del 25%)")
 
 tab_trabajo, tab_capital, tab_nolaboral = st.tabs(["💼 Rentas de Trabajo", "🏢 Rentas de Capital", "🏪 Rentas No Laborales"])
@@ -326,18 +325,13 @@ st.markdown("---")
 # --- 7. PANEL DE OPTIMIZACIÓN INDEPENDIENTE Y CÁLCULO 25% / 40% ---
 st.header("6. Liquidación Cédula General, Optimización Independientes y Límites")
 
-# ================= PASO 1: COMPARACIÓN INTELIGENTE PARA INDEPENDIENTES (Art. 336 E.T.) =================
-st.markdown("### 🔹 Paso 1: Optimización y Comparación (Renta Exenta 25% vs Costos)")
-st.caption("Norma Legal: Art. 336 E.T. Prohíbe la acumulación simultánea. El sistema evalúa si al contribuyente independiente le favorece más restar sus Costos Procedentes o la Renta Exenta del 25% sobre la base limpia.")
-
-# Base teórica para el 25% restando los costos de trabajo
 base_25_porciento = max(0, ingreso_neto_trabajo - costos_trabajo - total_deducciones_limitadas - re_afc_pensiones_aplicable - re_cesantias - re_indemnizaciones - re_gastos_rep)
 calculo_25_bruto = base_25_porciento * 0.25
 renta_exenta_25_teorica = min(calculo_25_bruto, TOPE_25_EXENTO)
 
 if es_independiente:
     if costos_trabajo > renta_exenta_25_teorica:
-        beneficio_trabajo_aplicado = 0.0 # Se usarán los costos restados en la depuración
+        beneficio_trabajo_aplicado = 0.0
         st.success(f"⚖️ **Optimización Fiscal Activa:** El sistema determinó que tus **Costos Procedentes (${costos_trabajo:,.0f})** son mayores que la Renta Exenta del 25% (${renta_exenta_25_teorica:,.0f}). Por ley, se aplicarán los **Costos** para maximizar tu beneficio.")
     else:
         beneficio_trabajo_aplicado = renta_exenta_25_teorica
@@ -352,7 +346,6 @@ col_opt3.text_input("3. Beneficio Laboral Seleccionado por Ley", value=f"${max(c
 
 st.markdown("---")
 
-# ================= PASO 2: APLICACIÓN DEL LÍMITE GLOBAL 40% =================
 st.markdown("### 🔹 Paso 2: Aplicación del Límite Global del 40%")
 st.caption("Norma Legal: Art. 336 E.T. La sumatoria de las deducciones y rentas exentas (más el beneficio laboral elegido) no puede superar el 40% del Ingreso Neto ni 1.340 UVT.")
 
@@ -370,7 +363,6 @@ beneficios_permitidos = min(total_beneficios_sometidos, limite_final_aplicable)
 
 st.success(f"✅ **Beneficios Totales Reconocidos (El menor valor legal): ${beneficios_permitidos:,.0f}**")
 
-# --- BENEFICIO FACTURA ELECTRÓNICA ---
 st.subheader("Beneficio Adicional: Factura Electrónica (1%)")
 col_fe1, col_fe2 = st.columns(2)
 with col_fe1:
@@ -381,7 +373,6 @@ with col_fe2:
     st.text_input(f"Valor a Deducir (1% Aplicado - Máx :red[${TOPE_FACTURA_ELEC:,.0f}])", value=f"${ded_factura_elec:,.0f}", disabled=True)
     if calculo_1_porciento > TOPE_FACTURA_ELEC: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_factura_elec:,.0f}]")
 
-# --- RENTA LÍQUIDA FINAL CÉDULA GENERAL ---
 renta_liquida_cedula_general = max(0, renta_liquida_antes_beneficios - beneficios_permitidos - ded_factura_elec)
 st.info(f"👉 **RENTA LÍQUIDA GRAVABLE CÉDULA GENERAL:** ${renta_liquida_cedula_general:,.0f}")
 
@@ -469,7 +460,7 @@ with col_liq2:
 
 impuesto_neto = max(0, impuesto_pesos - descuentos_tributarios)
 
-# --- MOTOR DE CÁLCULO DE ANTICIPO (Con explicaciones detalladas en pantalla) ---
+# --- MOTOR DE CÁLCULO DE ANTICIPO ---
 porcentaje_anticipo = 0.25 if "1" in anos_declarando else (0.50 if "2" in anos_declarando else 0.75)
 anticipo_metodo_1 = max(0, (impuesto_neto * porcentaje_anticipo) - retenciones)
 promedio_impuestos = (impuesto_neto + impuesto_neto_anterior) / 2
@@ -514,3 +505,87 @@ else:
     col_res3.metric(label="🟢 SALDO A FAVOR", value=f"${abs(saldo_total):,.0f}")
 
 st.caption("Nota Legal: Este liquidador es una herramienta de referencia basada en la normativa vigente. Se recomienda validación profesional final.")
+
+st.markdown("---")
+
+# ================= 10. NUEVA SECCIÓN: GENERADOR DE INFORMES Y BORRADOR FORMULARIO 210 =================
+st.header("9. Generador de Informes y Borrador Formulario 210 (DIAN)")
+st.caption("Visualiza el informe detallado de la liquidación y el borrador oficial listo para transcribir al portal Muisca.")
+
+tab_inf1, tab_inf2 = st.tabs(["📄 Informe Detallado de Liquidación", "📋 Borrador Formulario 210 (Listo para Presentar)"])
+
+with tab_inf1:
+    st.subheader("Informe de Campos Editados y Resultados Fiscales - AG 2025")
+    st.markdown(f"""
+    * **Contribuyente:** {nombre}
+    * **NIT / Cédula:** {nit}
+    * **Actividad Económica (CIIU):** {actividad_economica}
+    * **Modalidad Independiente:** {'Sí (Optimización Activa)' if es_independiente else 'No'}
+    
+    ---
+    ### 1. Consolidación Patrimonial
+    * **Patrimonio Bruto Total:** ${patrimonio_bruto_calc:,.0f}
+    * **Pasivos Totales:** ${val_pasivos:,.0f}
+    * **Patrimonio Líquido 2025:** ${patrimonio_liquido_calc:,.0f}
+    * **Patrimonio Líquido 2024 (Anterior):** ${patrimonio_liquido_anterior:,.0f}
+    
+    ---
+    ### 2. Ingresos y Depuración Cédula General
+    * **Ingresos Brutos Totales:** ${ingresos_brutos:,.0f}
+    * **Ingresos No Constitutivos de Renta (INCRNGO):** ${incrngo:,.0f}
+    * **Costos y Gastos Procedentes:** ${costos_procedentes_totales:,.0f}
+    * **Ingreso Neto:** ${ingreso_neto:,.0f}
+    
+    ---
+    ### 3. Beneficios Tributarios Aplicados
+    * **Total Deducciones y Exentas Sometidas:** ${total_beneficios_sometidos:,.0f}
+    * **Beneficios Permitidos (Tras aplicar tope 40% / 1.340 UVT):** ${beneficios_permitidos:,.0f}
+    * **Deducción Factura Electrónica (1%):** ${ded_factura_elec:,.0f}
+    * **Renta Líquida Gravable Cédula General:** ${renta_liquida_cedula_general:,.0f}
+    
+    ---
+    ### 4. Control de Renta y Liquidación Final
+    * **Renta por Comparación Patrimonial:** ${renta_comparacion:,.0f}
+    * **Renta Líquida Gravable Definitiva:** ${renta_liquida_definitiva:,.0f}
+    * **Base en UVT:** {base_uvt:,.2f} UVT
+    * **Impuesto Neto a Cargo:** ${impuesto_neto:,.0f}
+    * **Anticipo Año Siguiente:** ${anticipo_final:,.0f}
+    * **Retenciones Practicadas:** ${retenciones:,.0f}
+    """)
+    if saldo_total > 0:
+        st.error(f"**SALDO TOTAL A PAGAR:** ${saldo_total:,.0f} COP")
+    else:
+        st.success(f"**SALDO TOTAL A FAVOR:** ${abs(saldo_total):,.0f} COP")
+
+with tab_inf2:
+    st.subheader("Borrador Oficial - Formulario 210 (Personas Naturales Residentes)")
+    st.caption("Usa esta estructura organizada por secciones para diligenciar de manera rápida y segura tu declaración en el servicio informático electrónico de la DIAN.")
+    
+    # Tabla simulada del Formulario 210
+    datos_f210 = [
+        ["PATRIMONIO", "Total patrimonio bruto", f"${patrimonio_bruto_calc:,.0f}"],
+        ["PATRIMONIO", "Deudas / Pasivos", f"${val_pasivos:,.0f}"],
+        ["PATRIMONIO", "Patrimonio líquido", f"${patrimonio_liquido_calc:,.0f}"],
+        ["INGRESOS", "Ingresos brutos de actividades ordinarias / trabajo", f"${ingresos_brutos:,.0f}"],
+        ["INGRESOS", "Ingresos no constitutivos de renta ni ganancia ocasional", f"${incrngo:,.0f}"],
+        ["COSTOS Y GASTOS", "Costos y gastos procedentes", f"${costos_procedentes_totales:,.0f}"],
+        ["DEDUCCIONES", "Total deducciones imputables aceptadas", f"${total_deducciones_limitadas:,.0f}"],
+        ["RENTAS EXENTAS", "Total rentas exentas limitadas (incluye 25%)", f"${beneficios_permitidos - total_deducciones_limitadas:,.0f}"],
+        ["RENTAS EXENTAS", "Deducción especial factura electrónica", f"${ded_factura_elec:,.0f}"],
+        ["RENTA GRAVABLE", "Renta líquida gravable cédula general", f"${renta_liquida_cedula_general:,.0f}"],
+        ["RENTA GRAVABLE", "Renta líquida por comparación patrimonial", f"${renta_comparacion:,.0f}"],
+        ["RENTA GRAVABLE", "Renta líquida gravable total", f"${renta_liquida_definitiva:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Impuesto sobre la renta líquida gravable", f"${impuesto_pesos:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Descuentos tributarios", f"${descuentos_tributarios:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Impuesto neto de renta", f"${impuesto_neto:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Anticipo impuesto sobre la renta año siguiente", f"${anticipo_final:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Saldo a favor año anterior sin devolución", f"${saldo_favor_anterior:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Retenciones en la fuente que le practicaron", f"${retenciones:,.0f}"],
+        ["PAGO / SALDO", "TOTAL SALDO A PAGAR (Si el resultado es mayor a cero)", f"${max(0, saldo_total):,.0f}"],
+        ["PAGO / SALDO", "TOTAL SALDO A FAVOR (Si el resultado es menor a cero)", f"${abs(min(0, saldo_total)):,.0f}"]
+    ]
+    
+    df_f210 = pd.DataFrame(datos_f210, columns=["Sección DIAN", "Concepto / Casilla Formulario 210", "Valor Liquidado (COP)"])
+    st.table(df_f210)
+    
+    st.info("💡 **Consejo Profesional:** Verifica que cada uno de los valores aquí descritos coincida con los certificados de tus entidades financieras, fondos de pensiones, extractos y soportes de propiedades antes de firmar y presentar tu declaración en la DIAN.")
