@@ -211,7 +211,7 @@ renta_liquida_antes_beneficios = max(0, ingreso_neto - costos_procedentes)
 st.write(f"**Resumen Consolidado:** Ingresos Brutos Totales: ${ingresos_brutos:,.0f} | Ingreso Neto: ${ingreso_neto:,.0f}")
 st.markdown("---")
 
-# --- 5. MEJORA: DEDUCCIONES IMPUTABLES COMPLETAS Y TOPETEADAS ---
+# --- 5. DEDUCCIONES IMPUTABLES COMPLETAS Y TOPETEADAS ---
 st.header("4. Deducciones Imputables (Con topes legales en COP)")
 st.caption("Ingresa los valores reales que pagaste. El liquidador automáticamente topará el valor al máximo legal permitido.")
 
@@ -406,7 +406,7 @@ else:
 
 st.markdown("---")
 
-# --- 9. LIQUIDACIÓN DEL IMPUESTO Y ANTICIPO ---
+# --- 9. MEJORA APLICADA: LIQUIDACIÓN DEL IMPUESTO Y ANÁLISIS DETALLADO DEL ANTICIPO ---
 st.header("8. Liquidación de Impuestos y Saldo a Pagar")
 base_uvt = renta_liquida_definitiva / UVT_2025
 impuesto_uvt = calcular_impuesto_241(base_uvt)
@@ -444,7 +444,7 @@ with col_liq2:
 
 impuesto_neto = max(0, impuesto_pesos - descuentos_tributarios)
 
-# --- MOTOR DE CÁLCULO DE ANTICIPO ---
+# --- MOTOR DE CÁLCULO DE ANTICIPO (Con explicaciones detalladas en pantalla) ---
 porcentaje_anticipo = 0.25 if "1" in anos_declarando else (0.50 if "2" in anos_declarando else 0.75)
 anticipo_metodo_1 = max(0, (impuesto_neto * porcentaje_anticipo) - retenciones)
 promedio_impuestos = (impuesto_neto + impuesto_neto_anterior) / 2
@@ -453,9 +453,30 @@ anticipo_final = min(anticipo_metodo_1, anticipo_metodo_2)
 saldo_total = (impuesto_neto + anticipo_final) - retenciones - saldo_favor_anterior
 
 with st.expander("Ver análisis detallado del Anticipo de Renta (Art 807 E.T.)"):
-    st.write(f"- Procedimiento 1 (Impuesto actual): ${anticipo_metodo_1:,.0f}")
-    st.write(f"- Procedimiento 2 (Promedio): ${anticipo_metodo_2:,.0f}")
-    st.success(f"**El sistema seleccionó automáticamente el menor valor: ${anticipo_final:,.0f} COP**")
+    st.markdown(f"**Porcentaje de Anticipo Aplicable:** {porcentaje_anticipo * 100}% (Según antigüedad declarando)")
+    st.markdown("---")
+    
+    col_m1, col_m2 = st.columns(2)
+    with col_m1:
+        st.markdown("### 🔹 Procedimiento 1")
+        st.caption("Basado en el impuesto neto del año actual (2025).")
+        st.write(f"1. **Impuesto Neto Año Actual:** ${impuesto_neto:,.0f}")
+        st.write(f"2. **Anticipo Bruto (Impuesto x {porcentaje_anticipo * 100}%):** ${(impuesto_neto * porcentaje_anticipo):,.0f}")
+        st.write(f"3. **Menos Retenciones (2025):** -${retenciones:,.0f}")
+        st.info(f"**Total Procedimiento 1:** ${anticipo_metodo_1:,.0f}")
+        
+    with col_m2:
+        st.markdown("### 🔹 Procedimiento 2")
+        st.caption("Basado en el promedio del impuesto de los dos últimos años.")
+        st.write(f"1. **Impuesto Neto Año Actual (2025):** ${impuesto_neto:,.0f}")
+        st.write(f"2. **Impuesto Neto Año Anterior (2024):** ${impuesto_neto_anterior:,.0f}")
+        st.write(f"3. **Promedio:** ${promedio_impuestos:,.0f}")
+        st.write(f"4. **Anticipo Bruto (Promedio x {porcentaje_anticipo * 100}%):** ${(promedio_impuestos * porcentaje_anticipo):,.0f}")
+        st.write(f"5. **Menos Retenciones (2025):** -${retenciones:,.0f}")
+        st.info(f"**Total Procedimiento 2:** ${anticipo_metodo_2:,.0f}")
+        
+    st.markdown("---")
+    st.success(f"✅ **El sistema seleccionó automáticamente el menor valor exigido por ley: ${anticipo_final:,.0f} COP**")
 
 st.markdown("---")
 col_res1, col_res2, col_res3 = st.columns(3)
