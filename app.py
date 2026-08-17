@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
 
 # --- 1. CONSTANTES TRIBUTARIAS AG 2025 ---
 UVT_2025 = 49799
@@ -243,7 +242,7 @@ ingreso_neto = max(0, ingresos_brutos - incrngo)
 ingreso_neto_trabajo = max(0, ing_trabajo - incrngo_trabajo)
 renta_liquida_antes_beneficios = max(0, ingreso_neto - costos_procedentes_totales)
 
-st.write(f"**Resumen Consolidado:** Ingresos Brutos Totales: ${ingresos_brutos:,.0f} | Costos Totales: ${costos_procedentes_totales:,.0f} \vert{} Ingreso Neto:${ingreso_neto:,.0f}")
+st.write(f"**Resumen Consolidado:** Ingresos Brutos Totales: ${ingresos_brutos:,.0f} | Costos Totales: ${costos_procedentes_totales:,.0f} | Ingreso Neto: ${ingreso_neto:,.0f}")
 st.markdown("---")
 
 # --- 5. DEDUCCIONES IMPUTABLES COMPLETAS Y TOPETEADAS ---
@@ -509,11 +508,11 @@ st.caption("Nota Legal: Este liquidador es una herramienta de referencia basada 
 
 st.markdown("---")
 
-# ================= 10. GENERADOR DE INFORMES Y BORRADOR FORMULARIO 210 (DIAN) =================
+# ================= 10. NUEVA SECCIÓN: GENERADOR DE INFORMES Y BORRADOR FORMULARIO 210 =================
 st.header("9. Generador de Informes y Borrador Formulario 210 (DIAN)")
-st.caption("Visualiza el informe detallado de la liquidación, el borrador oficial y descarga los documentos directos en formato PDF.")
+st.caption("Visualiza el informe detallado de la liquidación y el borrador oficial listo para transcribir al portal Muisca.")
 
-tab_inf1, tab_inf2 = st.tabs(["📄 Informe Detallado de Liquidación", "📋 Borrador Oficial Formulario 210"])
+tab_inf1, tab_inf2 = st.tabs(["📄 Informe Detallado de Liquidación", "📋 Borrador Formulario 210 (Listo para Presentar)"])
 
 with tab_inf1:
     st.subheader("Informe de Campos Editados y Resultados Fiscales - AG 2025")
@@ -558,80 +557,35 @@ with tab_inf1:
     else:
         st.success(f"**SALDO TOTAL A FAVOR:** ${abs(saldo_total):,.0f} COP")
 
-    # --- FUNCIÓN PDF INFORME ---
-    def generar_pdf_informe():
-        from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib import colors
-
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-        elements = []
-        styles = getSampleStyleSheet()
-
-        title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor('#1B365D'), alignment=1)
-        subtitle_style = ParagraphStyle('SubTitleStyle', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#555555'), alignment=1)
-
-        elements.append(Paragraph("INFORME DETALLADO DE LIQUIDACIÓN DE RENTA - AG 2025", title_style))
-        elements.append(Paragraph(f"Contribuyente: {nombre} | NIT/CC: {nit}", subtitle_style))
-        elements.append(Spacer(1, 15))
-
-        data = [
-            ["Concepto Fiscal", "Valor (COP)"],
-            ["Patrimonio Bruto Total", f"${patrimonio_bruto_calc:,.0f}"],
-            ["Pasivos Totales", f"${val_pasivos:,.0f}"],
-            ["Patrimonio Líquido 2025", f"${patrimonio_liquido_calc:,.0f}"],
-            ["Ingresos Brutos Cédula General", f"${ingresos_brutos:,.0f}"],
-            ["INCRNGO Total", f"${incrngo:,.0f}"],
-            ["Costos y Gastos Procedentes", f"${costos_procedentes_totales:,.0f}"],
-            ["Beneficios Permitidos (Tope 40%)", f"${beneficios_permitidos:,.0f}"],
-            ["Deducción Factura Electrónica (1%)", f"${ded_factura_elec:,.0f}"],
-            ["Renta Líquida Gravable Cédula General", f"${renta_liquida_cedula_general:,.0f}"],
-            ["Renta por Comparación Patrimonial", f"${renta_comparacion:,.0f}"],
-            ["Renta Líquida Gravable Definitiva", f"${renta_liquida_definitiva:,.0f}"],
-            ["Impuesto Neto a Cargo", f"${impuesto_neto:,.0f}"],
-            ["Anticipo Impuesto Año Siguiente", f"${anticipo_final:,.0f}"],
-            ["Retenciones y Saldo a Favor Anterior", f"${retenciones + saldo_favor_anterior:,.0f}"],
-            ["SALDO TOTAL A PAGAR / (FAVOR)", f"${saldo_total:,.0f}"]
-        ]
-
-        t = Table(data, colWidths=[300, 200])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (1,0), colors.HexColor('#1B365D')),
-            ('TEXTCOLOR', (0,0), (1,0), colors.white),
-            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,-1), 9),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-            ('TOPPADDING', (0,0), (-1,-1), 5),
-            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CCCCCC')),
-            ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#F2F5F8')),
-            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
-        ]))
-
-        elements.append(t)
-        doc.build(elements)
-        buffer.seek(0)
-        return buffer
-
-    st.download_button(
-        label="📥 Descargar Informe Detallado en PDF",
-        data=generar_pdf_informe(),
-        file_name=f"Informe_Liquidacion_Renta_2025_{nit}.pdf",
-        mime="application/pdf"
-    )
-
 with tab_inf2:
-    st.subheader("Borrador Oficial - Formulario 210 (DIAN)")
-    st.caption("Estructura exacta basada en el Formulario 210 de la DIAN para personas naturales residentes.")
+    st.subheader("Borrador Oficial - Formulario 210 (Personas Naturales Residentes)")
+    st.caption("Usa esta estructura organizada por secciones para diligenciar de manera rápida y segura tu declaración en el servicio informático electrónico de la DIAN.")
     
-    # Datos estructurados directamente en casillas idénticas al Formulario 210 oficial
-    datos_f210_oficial = [
-        ["DATOS DEL DECLARANTE", "Número de Identificación Tributaria (NIT)", f"{nit}"],
-        ["DATOS DEL DECLARANTE", "Primer Apellido / Segundo Apellido", f"{nombre}"],
-        ["DATOS DEL DECLARANTE", "Actividad Económica Principal", f"{actividad_economica[:4]}"],
-        ["DATOS DEL DECLARANTE", "Uno por ciento (1%) de compras con factura electrónica", f"${val_compras_factura:,.0f}"],
-        ["PATRIMONIO", "Total patrimonio bruto (Casilla 29)", f"${patrimonio_bruto_calc:,.0f}"],
-        ["PATRIMONIO", "Deudas / Pasivos (Casilla 30)", f"${val_pasivos:,.0f}"],
-        ["PATRIMONIO", "Total patrimonio líquido (Casilla
+    # Tabla simulada del Formulario 210
+    datos_f210 = [
+        ["PATRIMONIO", "Total patrimonio bruto", f"${patrimonio_bruto_calc:,.0f}"],
+        ["PATRIMONIO", "Deudas / Pasivos", f"${val_pasivos:,.0f}"],
+        ["PATRIMONIO", "Patrimonio líquido", f"${patrimonio_liquido_calc:,.0f}"],
+        ["INGRESOS", "Ingresos brutos de actividades ordinarias / trabajo", f"${ingresos_brutos:,.0f}"],
+        ["INGRESOS", "Ingresos no constitutivos de renta ni ganancia ocasional", f"${incrngo:,.0f}"],
+        ["COSTOS Y GASTOS", "Costos y gastos procedentes", f"${costos_procedentes_totales:,.0f}"],
+        ["DEDUCCIONES", "Total deducciones imputables aceptadas", f"${total_deducciones_limitadas:,.0f}"],
+        ["RENTAS EXENTAS", "Total rentas exentas limitadas (incluye 25%)", f"${beneficios_permitidos - total_deducciones_limitadas:,.0f}"],
+        ["RENTAS EXENTAS", "Deducción especial factura electrónica", f"${ded_factura_elec:,.0f}"],
+        ["RENTA GRAVABLE", "Renta líquida gravable cédula general", f"${renta_liquida_cedula_general:,.0f}"],
+        ["RENTA GRAVABLE", "Renta líquida por comparación patrimonial", f"${renta_comparacion:,.0f}"],
+        ["RENTA GRAVABLE", "Renta líquida gravable total", f"${renta_liquida_definitiva:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Impuesto sobre la renta líquida gravable", f"${impuesto_pesos:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Descuentos tributarios", f"${descuentos_tributarios:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Impuesto neto de renta", f"${impuesto_neto:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Anticipo impuesto sobre la renta año siguiente", f"${anticipo_final:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Saldo a favor año anterior sin devolución", f"${saldo_favor_anterior:,.0f}"],
+        ["LIQUIDACIÓN PRIVADA", "Retenciones en la fuente que le practicaron", f"${retenciones:,.0f}"],
+        ["PAGO / SALDO", "TOTAL SALDO A PAGAR (Si el resultado es mayor a cero)", f"${max(0, saldo_total):,.0f}"],
+        ["PAGO / SALDO", "TOTAL SALDO A FAVOR (Si el resultado es menor a cero)", f"${abs(min(0, saldo_total)):,.0f}"]
+    ]
+    
+    df_f210 = pd.DataFrame(datos_f210, columns=["Sección DIAN", "Concepto / Casilla Formulario 210", "Valor Liquidado (COP)"])
+    st.table(df_f210)
+    
+    st.info("💡 **Consejo Profesional:** Verifica que cada uno de los valores aquí descritos coincida con los certificados de tus entidades financieras, fondos de pensiones, extractos y soportes de propiedades antes de firmar y presentar tu declaración en la DIAN.")
