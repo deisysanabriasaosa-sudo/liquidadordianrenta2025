@@ -211,22 +211,30 @@ renta_liquida_antes_beneficios = max(0, ingreso_neto - costos_procedentes)
 st.write(f"**Resumen Consolidado:** Ingresos Brutos Totales: ${ingresos_brutos:,.0f} | Ingreso Neto: ${ingreso_neto:,.0f}")
 st.markdown("---")
 
-# --- 5. MEJORA: DEDUCCIONES IMPUTABLES COMPLETAS ---
+# --- 5. MEJORA: DEDUCCIONES IMPUTABLES COMPLETAS Y TOPETEADAS ---
 st.header("4. Deducciones Imputables (Con topes legales en COP)")
-st.caption("Diligencia todos los rubros contemplados en el Estatuto Tributario que apliquen a tu caso.")
+st.caption("Ingresa los valores reales que pagaste. El liquidador automáticamente topará el valor al máximo legal permitido.")
 
 col_d1, col_d2 = st.columns(2)
 
 with col_d1:
-    ded_vivienda = st.number_input(f"Intereses Crédito Vivienda (Máx ${TOPE_VIVIENDA:,.0f})", min_value=0.0, max_value=float(TOPE_VIVIENDA), step=100000.0, help="Art. 119 E.T.")
-    ded_medicina = st.number_input(f"Medicina Prepagada (Máx ${TOPE_MEDICINA:,.0f})", min_value=0.0, max_value=float(TOPE_MEDICINA), step=100000.0, help="Art. 387 E.T.")
+    # Vivienda
+    val_vivienda = st.number_input(f"Intereses Crédito Vivienda (Máx Legal :red[${TOPE_VIVIENDA:,.0f}])", min_value=0.0, step=100000.0, help="Art. 119 E.T.")
+    ded_vivienda = min(val_vivienda, float(TOPE_VIVIENDA))
+    if val_vivienda > TOPE_VIVIENDA: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_vivienda:,.0f}]")
+    
+    # Medicina
+    val_medicina = st.number_input(f"Medicina Prepagada (Máx Legal :red[${TOPE_MEDICINA:,.0f}])", min_value=0.0, step=100000.0, help="Art. 387 E.T.")
+    ded_medicina = min(val_medicina, float(TOPE_MEDICINA))
+    if val_medicina > TOPE_MEDICINA: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_medicina:,.0f}]")
+    
+    # GMF
     ded_gmf = st.number_input("Deducción 50% GMF (4x1000)", min_value=0.0, step=10000.0, help="Art. 115 E.T.")
     
-    ded_icetex = st.number_input(
-        f"Intereses Préstamos ICETEX (Máx ${TOPE_ICETEX:,.0f})", 
-        min_value=0.0, max_value=float(TOPE_ICETEX), step=100000.0,
-        help="Norma: Art. 119 E.T. Deducción de intereses pagados al ICETEX para créditos educativos. Tope legal anual 100 UVT."
-    )
+    # ICETEX
+    val_icetex = st.number_input(f"Intereses Préstamos ICETEX (Máx Legal :red[${TOPE_ICETEX:,.0f}])", min_value=0.0, step=100000.0, help="Art. 119 E.T.")
+    ded_icetex = min(val_icetex, float(TOPE_ICETEX))
+    if val_icetex > TOPE_ICETEX: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_icetex:,.0f}]")
 
 with col_d2:
     # Dependiente Tradicional 10%
@@ -235,38 +243,54 @@ with col_d2:
     if tope_dep_tradicional_aplicable == 0:
         ded_dep_tradicional = st.number_input("Dependiente Económico 10% (Ingresa ingresos primero)", value=0.0, disabled=True)
     else:
-        ded_dep_tradicional = st.number_input(f"Dependiente Económico 10% (Tope Máx: ${tope_dep_tradicional_aplicable:,.0f})", min_value=0.0, max_value=float(tope_dep_tradicional_aplicable), step=100000.0, help="Art. 387 E.T.")
+        val_dep_tradicional = st.number_input(f"Dependiente Económico 10% (Tope Máx Dinámico: :red[${tope_dep_tradicional_aplicable:,.0f}])", min_value=0.0, step=100000.0, help="Art. 387 E.T.")
+        ded_dep_tradicional = min(val_dep_tradicional, float(tope_dep_tradicional_aplicable))
+        if val_dep_tradicional > tope_dep_tradicional_aplicable: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_dep_tradicional:,.0f}]")
     
     # Dependientes Adicionales (Ley 2277)
     with st.expander("Dependientes Adicionales Ley 2277 (Hasta 4 dependientes)"):
-        dep_1 = st.number_input(f"Dependiente Adicional 1 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=10000.0)
-        dep_2 = st.number_input(f"Dependiente Adicional 2 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=10000.0)
-        dep_3 = st.number_input(f"Dependiente Adicional 3 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=10000.0)
-        dep_4 = st.number_input(f"Dependiente Adicional 4 (Máx ${TOPE_1_DEP:,.0f})", min_value=0.0, max_value=float(TOPE_1_DEP), step=10000.0)
+        val_dep_1 = st.number_input(f"Dependiente Adicional 1 (Máx por dep: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
+        dep_1 = min(val_dep_1, float(TOPE_1_DEP))
+        if val_dep_1 > TOPE_1_DEP: st.caption(f"Limitado a: :green[${dep_1:,.0f}]")
+        
+        val_dep_2 = st.number_input(f"Dependiente Adicional 2 (Máx por dep: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
+        dep_2 = min(val_dep_2, float(TOPE_1_DEP))
+        if val_dep_2 > TOPE_1_DEP: st.caption(f"Limitado a: :green[${dep_2:,.0f}]")
+        
+        val_dep_3 = st.number_input(f"Dependiente Adicional 3 (Máx por dep: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
+        dep_3 = min(val_dep_3, float(TOPE_1_DEP))
+        if val_dep_3 > TOPE_1_DEP: st.caption(f"Limitado a: :green[${dep_3:,.0f}]")
+        
+        val_dep_4 = st.number_input(f"Dependiente Adicional 4 (Máx por dep: :red[${TOPE_1_DEP:,.0f}])", min_value=0.0, step=10000.0)
+        dep_4 = min(val_dep_4, float(TOPE_1_DEP))
+        if val_dep_4 > TOPE_1_DEP: st.caption(f"Limitado a: :green[${dep_4:,.0f}]")
+        
         ded_dep_adicional = dep_1 + dep_2 + dep_3 + dep_4
-        st.info(f"Suma Adicionales: ${ded_dep_adicional:,.0f}")
+        st.info(f"Suma Adicionales Aplicada: ${ded_dep_adicional:,.0f}")
 
 total_deducciones_limitadas = ded_vivienda + ded_medicina + ded_dep_tradicional + ded_dep_adicional + ded_gmf + ded_icetex
 
 st.markdown("---")
 
-# --- 6. MEJORA: RENTAS EXENTAS COMPLETAS ---
+# --- 6. MEJORA: RENTAS EXENTAS COMPLETAS Y TOPETEADAS ---
 st.header("5. Rentas Exentas (Con topes legales en COP)")
 col_re1, col_re2 = st.columns(2)
 
 with col_re1:
-    re_afc_pensiones = st.number_input(
-        f"Aportes Vol. Pensión y AFC (Máx ${TOPE_AFC_PENSIONES:,.0f})", 
-        min_value=0.0, max_value=float(TOPE_AFC_PENSIONES), step=100000.0,
+    # Ajuste automático del tope del 30%
+    tope_afc_dinamico = min(float(TOPE_AFC_PENSIONES), ingresos_brutos * 0.30)
+    val_afc_pensiones = st.number_input(
+        f"Aportes Vol. Pensión y AFC (Máx Legal Dinámico :red[${tope_afc_dinamico:,.0f}])", 
+        min_value=0.0, step=100000.0,
         help="Art. 126-1 y 126-4 E.T. Límite 30% del ingreso y tope de 3800 UVT."
     )
-    # Ajuste automático del tope del 30%
-    re_afc_pensiones_aplicable = min(re_afc_pensiones, ingresos_brutos * 0.30)
+    re_afc_pensiones_aplicable = min(val_afc_pensiones, tope_afc_dinamico)
+    if val_afc_pensiones > tope_afc_dinamico: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${re_afc_pensiones_aplicable:,.0f}]")
     
     re_indemnizaciones = st.number_input(
         "Indemnizaciones (Seguros, enfermedad, maternidad)", 
         min_value=0.0, step=100000.0,
-        help="Norma: Art. 206 Num 1, 2, 3, 6 E.T. Rentas exentas por indemnizaciones laborales o seguros, sujetas al límite general."
+        help="Norma: Art. 206 Num 1, 2, 3, 6 E.T. Rentas exentas sujetas al límite general."
     )
 
 with col_re2:
@@ -295,10 +319,10 @@ renta_exenta_25_aplicable = min(calculo_25_bruto, TOPE_25_EXENTO)
 col_25_1, col_25_2, col_25_3 = st.columns(3)
 col_25_1.text_input("1. Base Depurada para el 25%", value=f"${base_25_porciento:,.0f}", disabled=True)
 col_25_2.text_input("2. Valor Calculado (Base x 25%)", value=f"${calculo_25_bruto:,.0f}", disabled=True)
-col_25_3.text_input(f"3. Valor final a tomar (Tope ${TOPE_25_EXENTO:,.0f})", value=f"${renta_exenta_25_aplicable:,.0f}", disabled=True)
+col_25_3.text_input(f"3. Valor final a tomar (Tope Máx :red[${TOPE_25_EXENTO:,.0f}])", value=f"${renta_exenta_25_aplicable:,.0f}", disabled=True)
 
 if calculo_25_bruto > TOPE_25_EXENTO:
-    st.warning(f"🚨 Alerta Normativa: Tu renta exenta del 25% calculada (${calculo_25_bruto:,.0f}) supera el tope legal anual de 790 UVT. El liquidador ha forzado el valor al tope máximo permitido (${TOPE_25_EXENTO:,.0f}) para evitar sanciones de fiscalización.")
+    st.warning(f"🚨 Alerta Normativa: Tu renta exenta del 25% calculada (${calculo_25_bruto:,.0f}) supera el tope legal anual de 790 UVT. El liquidador ha forzado el valor al tope máximo permitido (:green[${TOPE_25_EXENTO:,.0f}]) para evitar sanciones de fiscalización.")
 
 # ================= PASO 2: LÍMITE GLOBAL 40% =================
 st.markdown("### 🔹 Paso 2: Aplicación del Límite Global del 40%")
@@ -311,7 +335,7 @@ limite_uvt_1340 = TOPE_GLOBAL_1340
 col_40_1, col_40_2, col_40_3 = st.columns(3)
 col_40_1.text_input("A. Total Solicitado (Deducciones + Exentas)", value=f"${total_beneficios_sometidos:,.0f}", disabled=True)
 col_40_2.text_input("B. Límite del 40% del Ingreso Neto", value=f"${limite_40:,.0f}", disabled=True)
-col_40_3.text_input("C. Límite Absoluto (1.340 UVT)", value=f"${limite_uvt_1340:,.0f}", disabled=True)
+col_40_3.text_input(f"C. Límite Absoluto (1.340 UVT = :red[${limite_uvt_1340:,.0f}])", value=f"${limite_uvt_1340:,.0f}", disabled=True)
 
 # Determinación lógica del menor valor
 limite_final_aplicable = min(limite_40, limite_uvt_1340)
@@ -324,11 +348,12 @@ st.markdown(f"**Nota del Liquidador:** Al tomar de forma automática el menor va
 st.subheader("Beneficio Adicional: Factura Electrónica (1%)")
 col_fe1, col_fe2 = st.columns(2)
 with col_fe1:
-    total_compras_factura_elec = st.number_input("Valor Total Compras con Factura Electrónica", min_value=0.0, step=100000.0, help="Art. 336 Num 5 E.T.")
+    val_compras_factura = st.number_input("Valor Total Compras con Factura Electrónica", min_value=0.0, step=100000.0, help="Art. 336 Num 5 E.T.")
 with col_fe2:
-    calculo_1_porciento = total_compras_factura_elec * 0.01
-    ded_factura_elec = min(calculo_1_porciento, TOPE_FACTURA_ELEC)
-    st.text_input(f"Valor a Deducir (1% Aplicado - Máx ${TOPE_FACTURA_ELEC:,.0f})", value=f"${ded_factura_elec:,.0f}", disabled=True)
+    calculo_1_porciento = val_compras_factura * 0.01
+    ded_factura_elec = min(calculo_1_porciento, float(TOPE_FACTURA_ELEC))
+    st.text_input(f"Valor a Deducir (1% Aplicado - Máx :red[${TOPE_FACTURA_ELEC:,.0f}])", value=f"${ded_factura_elec:,.0f}", disabled=True)
+    if calculo_1_porciento > TOPE_FACTURA_ELEC: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_factura_elec:,.0f}]")
 
 # --- RENTA LÍQUIDA FINAL CÉDULA GENERAL ---
 renta_liquida_cedula_general = max(0, renta_liquida_antes_beneficios - beneficios_permitidos - ded_factura_elec)
@@ -391,11 +416,13 @@ limite_legal_descuentos = impuesto_pesos * 0.25
 
 col_liq1, col_liq2 = st.columns(2)
 with col_liq1:
-    descuentos_tributarios = st.number_input(
-        "Descuentos Tributarios (Donaciones, I+D+i, etc.)", 
+    val_descuentos = st.number_input(
+        f"Descuentos Tributarios (Máx Legal: :red[${limite_legal_descuentos:,.0f}])", 
         min_value=0.0, step=100000.0,
-        help="Se restan directamente del impuesto. Despliega el panel de abajo para ver la normatividad y el método de liquidación."
+        help="Donaciones, I+D+i, etc. Se restan directamente del impuesto."
     )
+    descuentos_tributarios = min(val_descuentos, limite_legal_descuentos)
+    if val_descuentos > limite_legal_descuentos: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${descuentos_tributarios:,.0f}]")
     
     with st.expander("📚 Ver conceptos legales de Descuentos Tributarios (Art. 253 al 257 E.T.)"):
         st.markdown("""
@@ -408,7 +435,6 @@ with col_liq1:
         
         ⚠️ **Regla General del Límite (Art. 258 E.T.):** No podrá exceder el 25% del impuesto sobre la renta a cargo.
         """)
-        st.info(f"💡 Para este caso, el límite legal máximo a descontar es: **${limite_legal_descuentos:,.0f} COP**")
 
     retenciones = st.number_input("Retenciones en la fuente practicadas en 2025", min_value=0.0, step=100000.0)
     impuesto_neto_anterior = st.number_input("Impuesto neto de renta del año anterior (2024)", min_value=0.0, step=100000.0)
