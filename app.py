@@ -268,10 +268,10 @@ with col_d1:
     if val_icetex > TOPE_ICETEX: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_icetex:,.0f}]")
 
 with col_d2:
-    limite_10_ingresos = ingresos_trabajo * 0.10
+    limite_10_ingresos = ing_trabajo * 0.10
     tope_dep_tradicional_aplicable = min(limite_10_ingresos, TOPE_DEP_TRADICIONAL)
     if tope_dep_tradicional_aplicable == 0:
-        ded_dep_tradicional = st.number_input("Dependiente Económico 10% (Ingresa ingresos primero)", value=0.0, disabled=True)
+        ded_dep_tradicional = st.number_input("Dependiente Económico 10% (Ingresa ingresos de trabajo primero)", value=0.0, disabled=True)
     else:
         val_dep_tradicional = st.number_input(f"Dependiente Económico 10% (Tope Máx Dinámico: :red[${tope_dep_tradicional_aplicable:,.0f}])", min_value=0.0, step=100000.0, help="Art. 387 E.T.")
         ded_dep_tradicional = min(val_dep_tradicional, float(tope_dep_tradicional_aplicable))
@@ -297,7 +297,6 @@ with col_d2:
         ded_dep_adicional = dep_1 + dep_2 + dep_3 + dep_4
         st.info(f"Suma Adicionales Aplicada: ${ded_dep_adicional:,.0f}")
 
-# CORRECCIÓN: Se retira ded_dep_adicional de la sumatoria sometida a límite
 total_deducciones_limitadas = ded_vivienda + ded_medicina + ded_dep_tradicional + ded_gmf + ded_icetex
 
 st.markdown("---")
@@ -375,7 +374,6 @@ with col_fe2:
     st.text_input(f"Valor a Deducir (1% Aplicado - Máx :red[${TOPE_FACTURA_ELEC:,.0f}])", value=f"${ded_factura_elec:,.0f}", disabled=True)
     if calculo_1_porciento > TOPE_FACTURA_ELEC: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_factura_elec:,.0f}]")
 
-# CORRECCIÓN: Restamos el dependiente adicional junto a la factura electrónica para la renta final
 renta_liquida_cedula_general = max(0, renta_liquida_antes_beneficios - beneficios_permitidos - ded_factura_elec - ded_dep_adicional)
 st.info(f"👉 **RENTA LÍQUIDA GRAVABLE CÉDULA GENERAL:** ${renta_liquida_cedula_general:,.0f}")
 
@@ -400,7 +398,6 @@ with col_pat3:
     pasivos_inexistentes = st.number_input("[Casilla 3] Pasivos Inexistentes / Bienes Omitidos", min_value=0.0, step=100000.0, help="Art. 239-1 E.T. Se suman directamente a la renta líquida por comparación.")
 
 diferencia_patrimonial_bruta = max(0, patrimonio_liquido_actual - patrimonio_liquido_anterior)
-# CORRECCIÓN: Sumamos el dependiente adicional para justificar el patrimonio correctamente
 rentas_justificadas = renta_liquida_cedula_general + incrngo + beneficios_permitidos + ded_factura_elec + ded_dep_adicional
 renta_comparacion = max(0, diferencia_patrimonial_bruta - rentas_justificadas + pasivos_inexistentes)
 
@@ -554,7 +551,7 @@ with tab_inf1:
     * **Deducción Medicina Prepagada:** ${ded_medicina:,.0f}
     * **Deducción GMF (4x1000):** ${ded_gmf:,.0f}
     * **Deducción ICETEX:** ${ded_icetex:,.0f}
-    * **Dependiente Tradicional (10%):** ${ded_dep_tradicional:,.0f}
+    * **Dependiente Tradicional (10% sobre trabajo):** ${ded_dep_tradicional:,.0f}
     * **Total Deducciones Imputables (Límite 40%):** ${total_deducciones_limitadas:,.0f}
     * **Rentas Exentas (AFC, Cesantías, Indemnizaciones, etc.):** ${(re_afc_pensiones_aplicable + re_cesantias + re_indemnizaciones + re_gastos_rep):,.0f}
     * **Renta Exenta 25% (Beneficio Laboral Aplicado):** ${beneficio_trabajo_aplicado:,.0f}
@@ -588,10 +585,8 @@ with tab_inf2:
     st.caption("Verifica los datos exactos referenciados por casillas de la DIAN y descarga tu borrador oficial en PDF.")
     
     total_rentas_exentas_trab = re_afc_pensiones_aplicable + re_cesantias + re_indemnizaciones + re_gastos_rep + beneficio_trabajo_aplicado
-    # CORRECCIÓN: Se retira ded_dep_adicional de la Casilla 42
     otras_deduc_trab = ded_medicina + ded_gmf + ded_icetex + ded_dep_tradicional
 
-    # Datos exactos del Formulario 210 mapeados
     datos_f210 = [
         ["DATOS INFORMATIVOS", "138. Número de dependientes económicos", f"{int((ded_dep_adicional/TOPE_1_DEP) if ded_dep_adicional > 0 else 0)}"],
         ["DATOS INFORMATIVOS", "139. Adición por dependientes (Casilla 92)", f"${ded_dep_adicional:,.0f}"],
@@ -616,8 +611,7 @@ with tab_inf2:
         ["CÉDULA GENERAL", "60. Ingresos no constitutivos de renta (No laborales)", f"${incrngo_nolaboral:,.0f}"],
         ["CÉDULA GENERAL", "61. Costos y deducciones procedentes (No laborales)", f"${costos_nolaboral:,.0f}"],
         ["RENTA GRAVABLE", "91. Renta líquida ordinaria cédula general", f"${renta_liquida_antes_beneficios:,.0f}"],
-        # CORRECCIÓN: Ajuste de etiqueta y valores para Casilla 92
-        ["RENTA GRAVABLE", "92. Rentas exentas y deduc. adicionales (Sin límite)", f"${(ded_factura_elec + ded_dep_adicional):,.0f}"],
+        ["RENTA GRAVABLE", "92. Rentas exentas y deducciones adicionales", f"${(ded_factura_elec + ded_dep_adicional):,.0f}"],
         ["RENTA GRAVABLE", "95. Renta líquida gravable cédula general", f"${renta_liquida_cedula_general:,.0f}"],
         ["RENTA GRAVABLE", "97. Renta líquida por comparación patrimonial", f"${renta_comparacion:,.0f}"],
         ["RENTA GRAVABLE", "98. Renta presuntiva", f"$0"],
