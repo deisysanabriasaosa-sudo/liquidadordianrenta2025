@@ -268,7 +268,7 @@ with col_d1:
     if val_icetex > TOPE_ICETEX: st.caption(f"⚠️ Valor topeteado (aplicado): :green[${ded_icetex:,.0f}]")
 
 with col_d2:
-    limite_10_ingresos = ingresos_brutos * 0.10
+    limite_10_ingresos = ingresos_trabajo * 0.10
     tope_dep_tradicional_aplicable = min(limite_10_ingresos, TOPE_DEP_TRADICIONAL)
     if tope_dep_tradicional_aplicable == 0:
         ded_dep_tradicional = st.number_input("Dependiente Económico 10% (Ingresa ingresos primero)", value=0.0, disabled=True)
